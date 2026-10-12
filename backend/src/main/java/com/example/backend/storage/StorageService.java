@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -95,8 +97,24 @@ public class StorageService {
             return null;
         }
         long expires = Instant.now().plus(config.getUrlTtl()).getEpochSecond();
-        return config.getPublicBaseUrl() + "/api/v1/media/file?key=" + URLEncoder.encode(key, StandardCharsets.UTF_8)
+        return publicBaseUrl() + "/api/v1/media/file?key=" + URLEncoder.encode(key, StandardCharsets.UTF_8)
                 + "&exp=" + expires + "&sig=" + signature(key, expires);
+    }
+
+    /**
+     * Adresse publique du backend pour les liens des photos. PUBLIC_BASE_URL vide : l'adresse utilisée par l'appel en
+     * cours (le téléphone reçoit http://IP-du-PC:8080, le dashboard http://localhost:8080), sans rien changer quand
+     * l'IP Wi-Fi du PC change. En production derrière un proxy, renseigner PUBLIC_BASE_URL.
+     */
+    private String publicBaseUrl() {
+        String configured = config.getPublicBaseUrl();
+        if (configured != null && !configured.isBlank()) {
+            return configured.replaceAll("/+$", "");
+        }
+        if (RequestContextHolder.getRequestAttributes() != null) {
+            return ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        }
+        return "http://localhost:8080";
     }
 
     public Resource load(String key, long expires, String signature) {

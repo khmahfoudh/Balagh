@@ -50,7 +50,8 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:8081}
   storage:
     local-dir: ${STORAGE_LOCAL_DIR:./uploads}
-    public-base-url: ${PUBLIC_BASE_URL:http://localhost:8080}
+    # Vide : adresse de l'appel en cours (pratique en développement quand l'IP Wi-Fi change)
+    public-base-url: ${PUBLIC_BASE_URL:}
   invitation:
     base-url: ${INVITATION_BASE_URL:http://localhost:4200/activation}
   demo:
