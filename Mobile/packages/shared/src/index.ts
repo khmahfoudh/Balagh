@@ -1,6 +1,6 @@
 // Code commun aux applications Citoyen et Chauffeur
 export * from './api/types';
-export { ApiError, configureApi, getApiConfig, getTokens, setTokens, type Tokens } from './api/client';
+export { ApiError, configureApi, devServerApiUrl, getApiConfig, getTokens, setTokens, type Tokens } from './api/client';
 export { api, type NewReport } from './api/endpoints';
 export { AuthProvider, useAuth } from './auth/AuthProvider';
 export { I18nProvider, useI18n, type Lang } from './i18n/I18nProvider';

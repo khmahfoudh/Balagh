@@ -18,20 +18,25 @@ cd Mobile
 npm install
 ```
 
-## 2. Indiquer l'adresse du backend
+## 2. Adresse du backend (automatique)
 
-Le téléphone ne peut pas joindre `localhost` : il faut l'IP du PC sur le Wi-Fi (`ipconfig` → « Adresse IPv4 »).
-Dans `apps/citizen/.env.local` et `apps/driver/.env.local` (copier `.env.example`) :
+En développement, l'app appelle le backend sur **le PC qui la sert** (même IP que Metro, port 8080) : rien à
+configurer, même quand l'IP Wi-Fi du PC change. Côté backend, laisser `PUBLIC_BASE_URL=` vide dans `backend/.env` :
+les liens des photos reprennent alors l'adresse utilisée par le téléphone.
 
-```
-EXPO_PUBLIC_API_URL=http://172.20.10.9:8080
-```
+Pour forcer une adresse (émulateur Android : `http://10.0.2.2:8080`, serveur distant, production), définir
+`EXPO_PUBLIC_API_URL` dans `apps/citizen/.env.local` et `apps/driver/.env.local` (copier `.env.example`), puis
+relancer Metro.
 
-Dans `backend/.env`, mettre la même IP pour que les photos s'affichent sur le téléphone :
-`PUBLIC_BASE_URL=http://172.20.10.9:8080`, puis redémarrer le backend.
+Le PC et le téléphone doivent être sur le même réseau. Si Windows demande d'autoriser Java ou Node.js sur le réseau,
+acceptez, y compris pour les réseaux publics (sinon les ports 8080 et 8081 sont bloqués par le pare-feu).
 
-Le PC et le téléphone doivent être sur le même réseau. Si Windows demande d'autoriser Java sur le réseau, acceptez
-(sinon, le port 8080 est bloqué par le pare-feu).
+Problèmes fréquents dans Expo Go :
+- « You're signed in to Expo Go as X, but not signed in to Expo CLI » : Metro a démarré hors ligne (réseau
+  instable) et n'a pas transmis le compte Expo. Relancer Metro avec Internet (`npx expo whoami` doit afficher le même
+  compte que l'app), ou se déconnecter d'Expo Go (onglet Profil).
+- « Could not connect to development server » : Metro n'est pas joignable. Vérifier que le terminal affiche le QR code,
+  puis ouvrir `http://IP-du-PC:8081/status` dans le navigateur du téléphone : il doit afficher `packager-status:running`.
 
 ## 3. Lancer
 

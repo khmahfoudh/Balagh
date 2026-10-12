@@ -54,6 +54,16 @@ export function getTokens(): Tokens | null {
   return tokens;
 }
 
+/**
+ * Développement : le backend tourne sur le PC qui sert l'application (Metro). Expo fournit son adresse
+ * (hostUri, ex. « 192.168.100.149:8081 ») : on garde l'hôte et on prend le port du backend.
+ * L'IP Wi-Fi du PC peut donc changer sans rien modifier.
+ */
+export function devServerApiUrl(hostUri: string | null | undefined, port = 8080): string | null {
+  const host = hostUri?.split('/')[0].replace(/:\d+$/, '');
+  return host ? `http://${host}:${port}` : null;
+}
+
 export function apiUrl(path: string): string {
   return config.baseUrl.replace(/\/+$/, '') + '/api/v1' + path;
 }
