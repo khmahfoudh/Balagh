@@ -1,0 +1,241 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>{{ (agent ? 'nav.drivers' : 'nav.users') | t }}</h1>
+      <p class="subtitle">{{ (agent ? 'users.subtitleAgent' : manager ? 'users.subtitleManager' : 'users.subtitleAdmin') | t }}</p>
+    </div>
+    <span class="spacer"></span>
+    @if (admin) {
+      <button mat-flat-button (click)="showCreate.set(!showCreate()); editing.set(null)">
+        <mat-icon>person_add</mat-icon>{{ 'users.new' | t }}
+      </button>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  <!-- Création (admin) ou invitation (responsable, agent) -->
+  @if (showCreate()) {
+    <section class="card panel">
+      <h2>{{ (admin ? 'users.createTitle' : agent ? 'teams.inviteDriver' : 'users.invite') | t }}</h2>
+      <form (ngSubmit)="submit()">
+        <div class="filters">
+          <mat-form-field>
+            <mat-label>{{ 'users.role' | t }}</mat-label>
+            <mat-select name="role" [(ngModel)]="form.role">
+              @for (r of creatableRoles; track r) {
+                <mat-option [value]="r">{{ r | label: 'role' }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          @if (admin && needsOrg(form.role)) {
+            <mat-form-field class="search">
+              <mat-label>{{ 'users.organization' | t }}</mat-label>
+              <mat-select name="organizationId" [(ngModel)]="form.organizationId" required>
+                @for (o of assignableOrgs(); track o.id) {
+                  <mat-option [value]="o.id">{{ o.name }} · {{ o.status | label: 'orgStatus' }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+          <mat-form-field>
+            <mat-label>{{ 'users.firstName' | t }}</mat-label>
+            <input matInput name="firstName" [(ngModel)]="form.firstName" required maxlength="60" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>{{ 'users.lastName' | t }}</mat-label>
+            <input matInput name="lastName" [(ngModel)]="form.lastName" required maxlength="60" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>{{ 'login.phone' | t }}</mat-label>
+            <input matInput name="phone" [(ngModel)]="form.phone" required inputmode="tel" [placeholder]="'login.phonePlaceholder' | t" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>{{ 'users.email' | t }}</mat-label>
+            <input matInput name="email" type="email" [(ngModel)]="form.email" />
+          </mat-form-field>
+        </div>
+
+        @if (admin) {
+          <div class="mode">
+            <mat-button-toggle-group name="mode" [(ngModel)]="form.mode" [attr.aria-label]="'users.mode' | t">
+              <mat-button-toggle value="INVITE"><mat-icon>sms</mat-icon> {{ 'users.modeInvite' | t }}</mat-button-toggle>
+              <mat-button-toggle value="PASSWORD"><mat-icon>key</mat-icon> {{ 'users.modePassword' | t }}</mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+          @if (form.mode === 'PASSWORD') {
+            <mat-form-field class="search">
+              <mat-label>{{ 'users.password' | t }}</mat-label>
+              <input matInput name="password" type="password" [(ngModel)]="form.password" minlength="8" autocomplete="new-password" />
+              <mat-hint>{{ 'users.passwordHint' | t }}</mat-hint>
+            </mat-form-field>
+          } @else {
+            <p class="muted small">{{ 'users.inviteHint' | t }}</p>
+          }
+        }
+
+        <div class="row">
+          <button mat-flat-button type="submit" [disabled]="busy() || !formValid()">
+            {{ (admin ? (form.mode === 'PASSWORD' ? 'users.create' : 'users.send') : 'users.send') | t }}
+          </button>
+          @if (admin) {
+            <button mat-button type="button" (click)="showCreate.set(false)">{{ 'common.cancel' | t }}</button>
+          }
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (invitation(); as inv) {
+    <div class="info-banner">
+      {{ 'users.invited' | t: { name: inv.firstName + ' ' + inv.lastName, phone: inv.phone } }}
+      <div class="link">
+        <span class="mono">{{ inv.activationLink }}</span>
+        <button mat-button type="button" (click)="copy(inv.activationLink)"><mat-icon>content_copy</mat-icon>{{ 'common.copy' | t }}</button>
+      </div>
+      <span class="small">{{ 'users.expires' | t: { date: (inv.expiresAt | dateTime) } }}</span>
+    </div>
+  }
+
+  <!-- Modification (admin) -->
+  @if (editing(); as e) {
+    <section class="card panel">
+      <h2>{{ 'users.editTitle' | t: { name: e.user.firstName + ' ' + e.user.lastName } }}</h2>
+      <div class="filters">
+        <mat-form-field>
+          <mat-label>{{ 'users.firstName' | t }}</mat-label>
+          <input matInput [(ngModel)]="e.firstName" maxlength="60" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>{{ 'users.lastName' | t }}</mat-label>
+          <input matInput [(ngModel)]="e.lastName" maxlength="60" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>{{ 'login.phone' | t }}</mat-label>
+          <input matInput [(ngModel)]="e.phone" inputmode="tel" />
+        </mat-form-field>
+        @if (e.user.role !== 'CITIZEN') {
+          <mat-form-field>
+            <mat-label>{{ 'users.role' | t }}</mat-label>
+            <mat-select [(ngModel)]="e.role" [disabled]="e.user.id === me()">
+              @for (r of staffRoles; track r) {
+                <mat-option [value]="r">{{ r | label: 'role' }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          @if (needsOrg(e.role)) {
+            <mat-form-field class="search">
+              <mat-label>{{ 'users.organization' | t }}</mat-label>
+              <mat-select [(ngModel)]="e.organizationId">
+                @for (o of assignableOrgs(); track o.id) {
+                  <mat-option [value]="o.id">{{ o.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+        }
+        <mat-form-field class="search">
+          <mat-label>{{ 'users.newPassword' | t }}</mat-label>
+          <input matInput type="password" [(ngModel)]="e.password" minlength="8" autocomplete="new-password" />
+          <mat-hint>{{ 'users.passwordHint' | t }}</mat-hint>
+        </mat-form-field>
+      </div>
+      <p class="muted small">{{ (e.user.role === 'CITIZEN' ? 'users.citizenNote' : 'users.sessionsNote') | t }}</p>
+      <div class="row">
+        <button mat-flat-button (click)="saveEdit(e)" [disabled]="busy() || !editValid(e)">{{ 'common.save' | t }}</button>
+        <button mat-button (click)="editing.set(null)">{{ 'common.cancel' | t }}</button>
+      </div>
+    </section>
+  }
+
+  <!-- Filtres -->
+  <div class="filters">
+    <mat-form-field class="search">
+      <mat-label>{{ 'users.search' | t }}</mat-label>
+      <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+    @if (admin) {
+      <mat-form-field>
+        <mat-label>{{ 'users.role' | t }}</mat-label>
+        <mat-select [(ngModel)]="roleFilter" (selectionChange)="load()">
+          <mat-option [value]="null">{{ 'filters.all' | t }}</mat-option>
+          @for (r of filterRoles; track r) {
+            <mat-option [value]="r">{{ r | label: 'role' }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{ 'users.organization' | t }}</mat-label>
+        <mat-select [ngModel]="orgFilter()" (ngModelChange)="orgFilter.set($event)">
+          <mat-option [value]="null">{{ 'users.allOrgs' | t }}</mat-option>
+          @for (o of organizations(); track o.id) {
+            <mat-option [value]="o.id">{{ o.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+  </div>
+
+  <section class="card table-card">
+    <div class="table-wrap">
+      <table mat-table [dataSource]="visibleUsers()">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>{{ 'users.name' | t }}</th>
+          <td mat-cell *matCellDef="let u"><strong>{{ u.firstName }} {{ u.lastName }}</strong></td>
+        </ng-container>
+        <ng-container matColumnDef="role">
+          <th mat-header-cell *matHeaderCellDef>{{ 'users.role' | t }}</th>
+          <td mat-cell *matCellDef="let u">{{ u.role | label: 'role' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="phone">
+          <th mat-header-cell *matHeaderCellDef>{{ 'login.phone' | t }}</th>
+          <td mat-cell *matCellDef="let u" class="mono">{{ u.phone }}</td>
+        </ng-container>
+        <ng-container matColumnDef="organization">
+          <th mat-header-cell *matHeaderCellDef>{{ 'incidents.organization' | t }}</th>
+          <td mat-cell *matCellDef="let u">{{ u.organizationName ?? '—' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="trust">
+          <th mat-header-cell *matHeaderCellDef>{{ 'users.trust' | t }}</th>
+          <td mat-cell *matCellDef="let u" [class.low]="u.role === 'CITIZEN' && u.trustScore < 50">
+            {{ u.role === 'CITIZEN' ? u.trustScore : '—' }}
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>{{ 'filters.status' | t }}</th>
+          <td mat-cell *matCellDef="let u">
+            <span class="badge" [style.--c]="u.status === 'ACTIVE' ? COLORS.resolved : COLORS.urgent">{{ u.status | label: 'userStatus' }}</span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let u" class="actions">
+            @if (admin) {
+              <button mat-button (click)="edit(u)"><mat-icon>edit</mat-icon>{{ 'users.edit' | t }}</button>
+            }
+            @if (canBlock(u)) {
+              <button mat-button (click)="toggle(u)" [disabled]="busy()">
+                {{ (u.status === 'ACTIVE' ? 'users.block' : 'users.unblock') | t }}
+              </button>
+            }
+            @if (admin && u.role === 'CITIZEN') {
+              @if (nni()[u.id]; as value) {
+                <span class="mono">{{ value }}</span>
+              } @else {
+                <button mat-button (click)="showNni(u)">{{ 'users.showNni' | t }}</button>
+              }
+            }
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+    @if (visibleUsers().length === 0) {
+      <p class="empty">{{ 'users.none' | t }}</p>
+    }
+  </section>
+</div>

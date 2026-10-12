@@ -35,6 +35,35 @@ public final class UserDtos {
             @Email String email) {
     }
 
+    /**
+     * Création d'un compte par l'admin (agent, responsable, chauffeur, État, admin ; les citoyens s'inscrivent seuls).
+     * password vide : invitation SMS (la personne confirme son numéro et choisit son mot de passe) ;
+     * password renseigné : compte actif tout de suite avec ce mot de passe initial.
+     */
+    public record AdminCreateUserRequest(
+            @NotBlank @Size(max = 60) String firstName,
+            @NotBlank @Size(max = 60) String lastName,
+            @NotBlank String phone,
+            @NotNull Role role,
+            UUID organizationId,
+            @Email String email,
+            @Size(min = 8, max = 100, message = "Au moins 8 caractères") String password) {
+    }
+
+    /** Un seul des deux est rempli : le compte créé, ou l'invitation envoyée. */
+    public record AdminCreateUserResponse(UserSummary user, InvitationResponse invitation) {
+    }
+
+    /** Modification par l'admin : seuls les champs renseignés changent. */
+    public record AdminUpdateUserRequest(
+            @Size(min = 1, max = 60) String firstName,
+            @Size(min = 1, max = 60) String lastName,
+            String phone,
+            Role role,
+            UUID organizationId,
+            @Size(min = 8, max = 100, message = "Au moins 8 caractères") String password) {
+    }
+
     public record InvitationResponse(UUID id, String phone, Role role, String firstName, String lastName,
                                      Instant expiresAt, String activationLink) {
     }

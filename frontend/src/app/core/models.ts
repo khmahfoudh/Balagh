@@ -102,6 +102,9 @@ export interface Organization {
 }
 export interface CreateOrganizationResponse { organization: Organization; managerInvitation: InvitationResponse; }
 
+/** Création d'un compte par l'admin : l'un des deux est rempli (compte actif, ou invitation envoyée). */
+export interface AdminCreateUserResponse { user: UserSummary | null; invitation: InvitationResponse | null; }
+
 export interface Setting { key: string; category: Category | null; value: string; description: string | null; updatedAt: string; }
 export interface InvitationResponse { id: string; phone: string; role: Role; firstName: string; lastName: string; expiresAt: string; activationLink: string; }
 

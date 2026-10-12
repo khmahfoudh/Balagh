@@ -2,6 +2,7 @@ package com.example.backend.web;
 
 import com.example.backend.enums.Role;
 import com.example.backend.security.CurrentUser;
+import com.example.backend.service.AdminUserService;
 import com.example.backend.service.OrganizationService;
 import com.example.backend.service.UserService;
 import com.example.backend.service.VehicleService;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public class OrganizationController {
     private final OrganizationService organizations;
     private final UserService users;
+    private final AdminUserService adminUsers;
     private final VehicleService vehicles;
 
     // ---------- Organismes ----------
@@ -91,7 +93,24 @@ public class OrganizationController {
         return users.list(me, role);
     }
 
-    @Operation(summary = "Bloquer / débloquer un compte")
+    @Operation(summary = "Admin : créer un compte (sans mot de passe : invitation SMS ; avec : compte actif tout de suite)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/admin/users")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AdminCreateUserResponse createUser(@AuthenticationPrincipal CurrentUser me,
+                                              @Valid @RequestBody AdminCreateUserRequest req) {
+        return adminUsers.create(me, req);
+    }
+
+    @Operation(summary = "Admin : modifier un compte (nom, téléphone, rôle, organisme, mot de passe)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/admin/users/{id}")
+    public UserSummary updateUser(@AuthenticationPrincipal CurrentUser me, @PathVariable UUID id,
+                                  @Valid @RequestBody AdminUpdateUserRequest req) {
+        return adminUsers.update(me, id, req);
+    }
+
+    @Operation(summary = "Suspendre / réactiver un compte")
     @PreAuthorize("hasAnyRole('MANAGER','AGENT','ADMIN')")
     @PatchMapping("/users/{id}/status")
     public UserSummary userStatus(@AuthenticationPrincipal CurrentUser me, @PathVariable UUID id,

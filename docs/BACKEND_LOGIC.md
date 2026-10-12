@@ -112,6 +112,8 @@ Pendant **72 h** après RÉSOLU, les citoyens qui avaient signalé répondent «
 | `AuthService` | Code SMS 6 chiffres (5 min, 5 essais) ; JWT 15 min + refresh token révocable ; une app refuse les autres rôles |
 | `OtpService.send()` | Le code est enregistré dans sa propre transaction **avant** l'envoi du SMS (sinon un code envoyé pouvait ne pas exister en base) |
 | `AuthService.acceptInvitation()` | Numéro déjà utilisé et mauvaise application vérifiés **avant** de consommer le code : un refus ne « brûle » pas le code |
+| `AdminUserService.create()` | **Admin** : crée un agent, responsable, chauffeur, compte État ou admin. Sans mot de passe : invitation SMS ; avec : compte actif tout de suite (numéro non vérifié). Un organisme INVITÉ devient ACTIF quand on lui crée un responsable. Les citoyens s'inscrivent seuls |
+| `AdminUserService.update()` | **Admin** : modifie nom, téléphone, rôle, organisme, mot de passe. Changer téléphone, rôle, organisme ou mot de passe déconnecte la personne (refresh tokens révoqués). Refusé : changer son propre rôle, transformer un citoyen en compte d'équipe, déplacer un chauffeur qui a des missions en cours |
 | `UserService.invite()` / `setStatus()` | Responsable : invite et bloque ses agents et chauffeurs. **Agent : invite et bloque les chauffeurs de son organisme** (choix du client, en plus du cahier des charges). Admin : bloque tout compte sauf admin |
 | `CryptoService` | NNI chiffré AES-256-GCM + empreinte HMAC unique ; jamais renvoyé (sauf admin, avec audit) |
 

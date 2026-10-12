@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { ConfigService } from './config.service';
 import {
-  AdminUnit, AuditItem, Category, Coverage, CreateOrganizationResponse, HeatPoint, IncidentDetail, IncidentStatus,
+  AdminCreateUserResponse, AdminUnit, AuditItem, Category, Coverage, CreateOrganizationResponse, HeatPoint, IncidentDetail, IncidentStatus,
   IncidentSummary, InvitationPreview, InvitationResponse, MissionStatus, MissionSummary, NotificationItem,
   Organization, OrgPerformance, OrgStatus, OrgType, OtpSentResponse, Page, Priority, RejectionReason, Role, Setting,
   StatsSummary, TeamMember, TokenResponse, UserSummary, Vehicle, ZoneAvailability,
@@ -104,6 +104,20 @@ export class ApiService {
   }
   setUserStatus(id: string, status: 'ACTIVE' | 'BLOCKED'): Promise<UserSummary> {
     return this.send('PATCH', `/users/${id}/status`, { status });
+  }
+  /** Admin : sans mot de passe → invitation SMS ; avec → compte actif tout de suite. */
+  adminCreateUser(body: {
+    firstName: string; lastName: string; phone: string; role: Role; organizationId: string | null; email: string | null;
+    password: string | null;
+  }): Promise<AdminCreateUserResponse> {
+    return this.send('POST', '/admin/users', body);
+  }
+  /** Admin : seuls les champs renseignés (non null) sont modifiés. */
+  adminUpdateUser(id: string, changes: {
+    firstName?: string | null; lastName?: string | null; phone?: string | null; role?: Role | null;
+    organizationId?: string | null; password?: string | null;
+  }): Promise<UserSummary> {
+    return this.send('PATCH', `/admin/users/${id}`, changes);
   }
   userNni(id: string): Promise<{ nni: string }> {
     return this.get(`/users/${id}/nni`);

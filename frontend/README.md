@@ -50,7 +50,7 @@ Les chauffeurs et les citoyens n'ont pas accès au dashboard (applications mobil
 | `/equipes` | agent, responsable | Chauffeurs (disponibilité, mission en cours), véhicules |
 | `/statistiques` | tous | Incidents par semaine, zones les plus touchées, carte de chaleur |
 | `/mes-zones` | agent, responsable | Zones d'intervention (wilaya → moughataa → commune) |
-| `/utilisateurs` | responsable, agent, admin | Responsable : agents et chauffeurs ; agent (menu « Chauffeurs ») : chauffeurs de son organisme ; admin : tous les comptes, NNI journalisé |
+| `/utilisateurs` | responsable, agent, admin | Admin : créer (invitation SMS ou mot de passe initial), modifier, suspendre/réactiver tous les comptes, NNI journalisé ; responsable : ses agents et chauffeurs ; agent (menu « Chauffeurs ») : chauffeurs de son organisme |
 | `/organismes`, `/zones` | admin, État | Création d'organisme + invitation du responsable ; libération et transfert de zones |
 | `/parametres`, `/audit` | admin | Seuils d'urgence ; journal d'audit |
 | `/etat/performance`, `/etat/exports` | admin, État | Performance comparée ; exports CSV / GeoJSON anonymisés |
