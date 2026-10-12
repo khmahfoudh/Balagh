@@ -1,0 +1,60 @@
+# Toute valeur sensible vient des variables d'environnement.
+# En local, elles sont lues depuis backend/.env (non versionné, voir .env.example).
+spring:
+  application:
+    name: balagh-backend
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:balagh_db}
+    username: ${DB_APP_USER}
+    password: ${DB_APP_PASSWORD}
+  flyway:
+    # Les migrations (DDL) tournent avec le propriétaire de la base ; l'application, avec un rôle limité.
+    user: ${DB_MIGRATION_USER}
+    password: ${DB_MIGRATION_PASSWORD}
+    locations: classpath:db/migration
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none   # Flyway fait foi
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 80MB
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-ttl: 15m
+    refresh-ttl: 30d
+  security:
+    nni-encryption-key: ${NNI_ENCRYPTION_KEY}
+    hash-secret: ${HASH_SECRET}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:8081}
+  storage:
+    local-dir: ${STORAGE_LOCAL_DIR:./uploads}
+    public-base-url: ${PUBLIC_BASE_URL:http://localhost:8080}
+  invitation:
+    base-url: ${INVITATION_BASE_URL:http://localhost:4200/activation}
+  demo:
+    enabled: ${DEMO_DATA:false}
+    password: ${DEMO_USERS_PASSWORD:}
+  scheduler:
+    enabled: ${SCHEDULER_ENABLED:true}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.example.backend: INFO
