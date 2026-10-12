@@ -76,8 +76,8 @@ public class OrganizationController {
 
     // ---------- Utilisateurs ----------
 
-    @Operation(summary = "Responsable : inviter un agent ou un chauffeur par téléphone")
-    @PreAuthorize("hasRole('MANAGER')")
+    @Operation(summary = "Responsable : inviter un agent ou un chauffeur ; agent : inviter un chauffeur")
+    @PreAuthorize("hasAnyRole('MANAGER','AGENT')")
     @PostMapping("/users/invite")
     @ResponseStatus(HttpStatus.CREATED)
     public InvitationResponse invite(@AuthenticationPrincipal CurrentUser me, @Valid @RequestBody InviteUserRequest req) {
@@ -92,7 +92,7 @@ public class OrganizationController {
     }
 
     @Operation(summary = "Bloquer / débloquer un compte")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('MANAGER','AGENT','ADMIN')")
     @PatchMapping("/users/{id}/status")
     public UserSummary userStatus(@AuthenticationPrincipal CurrentUser me, @PathVariable UUID id,
                                   @Valid @RequestBody StatusRequest req) {

@@ -19,6 +19,7 @@ import { COLORS, errorMessage } from '../../core/ui';
 /**
  * Utilisateurs :
  * - le responsable invite ses agents et chauffeurs (lien d'activation par SMS) et peut les bloquer ;
+ * - l'agent gère les chauffeurs de son organisme (invitation, blocage) ;
  * - l'admin national voit tous les comptes, les bloque, et peut afficher un NNI (action journalisée).
  */
 @Component({
@@ -28,23 +29,25 @@ import { COLORS, errorMessage } from '../../core/ui';
     <div class="page">
       <div class="page-header">
         <div>
-          <h1>{{ 'nav.users' | t }}</h1>
-          <p class="subtitle">{{ (manager ? 'users.subtitleManager' : 'users.subtitleAdmin') | t }}</p>
+          <h1>{{ (agent ? 'nav.drivers' : 'nav.users') | t }}</h1>
+          <p class="subtitle">{{ (agent ? 'users.subtitleAgent' : manager ? 'users.subtitleManager' : 'users.subtitleAdmin') | t }}</p>
         </div>
       </div>
       @if (error()) {
         <div class="error-banner">{{ error() }}</div>
       }
 
-      @if (manager) {
+      @if (orgStaff) {
         <section class="card invite">
-          <h2>{{ 'users.invite' | t }}</h2>
+          <h2>{{ (agent ? 'teams.inviteDriver' : 'users.invite') | t }}</h2>
           <form class="filters" (ngSubmit)="invite()">
             <mat-form-field>
               <mat-label>{{ 'users.role' | t }}</mat-label>
               <mat-select name="role" [(ngModel)]="form.role">
                 <mat-option value="DRIVER">{{ 'DRIVER' | label: 'role' }}</mat-option>
-                <mat-option value="AGENT">{{ 'AGENT' | label: 'role' }}</mat-option>
+                @if (manager) {
+                  <mat-option value="AGENT">{{ 'AGENT' | label: 'role' }}</mat-option>
+                }
               </mat-select>
             </mat-form-field>
             <mat-form-field>
@@ -131,7 +134,7 @@ import { COLORS, errorMessage } from '../../core/ui';
                     {{ (u.status === 'ACTIVE' ? 'users.block' : 'users.unblock') | t }}
                   </button>
                 }
-                @if (!manager && u.role === 'CITIZEN') {
+                @if (!orgStaff && u.role === 'CITIZEN') {
                   @if (nni()[u.id]; as value) {
                     <span class="mono">{{ value }}</span>
                   } @else {
@@ -167,8 +170,10 @@ export class UsersPage implements OnInit {
 
   protected readonly COLORS = COLORS;
   protected readonly manager = this.auth.hasRole('MANAGER');
+  protected readonly agent = this.auth.hasRole('AGENT');
+  protected readonly orgStaff = this.manager || this.agent;
   protected readonly roles: Role[] = ['CITIZEN', 'DRIVER', 'AGENT', 'MANAGER', 'AUTHORITY', 'ADMIN'];
-  protected readonly columns = this.manager
+  protected readonly columns = this.orgStaff
     ? ['name', 'role', 'phone', 'status', 'actions']
     : ['name', 'role', 'phone', 'organization', 'trust', 'status', 'actions'];
 
@@ -188,12 +193,14 @@ export class UsersPage implements OnInit {
 
   protected canBlock(u: UserSummary): boolean {
     if (u.id === this.me()) return false;
+    if (this.agent) return u.role === 'DRIVER';
     return this.manager ? u.role === 'AGENT' || u.role === 'DRIVER' : true;
   }
 
   protected async load(): Promise<void> {
     try {
-      this.users.set(await this.api.users(this.manager ? null : this.roleFilter));
+      // Agent : seulement les chauffeurs ; responsable : toute son équipe ; admin : filtre par rôle
+      this.users.set(await this.api.users(this.agent ? 'DRIVER' : this.manager ? null : this.roleFilter));
       this.error.set(null);
     } catch (e) {
       this.error.set(errorMessage(e, this.i18n));

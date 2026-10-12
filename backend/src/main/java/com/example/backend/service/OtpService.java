@@ -36,6 +36,11 @@ public class OtpService {
     public record Sent(long expiresInSeconds, String devCode) {
     }
 
+    /**
+     * Transaction propre (REQUIRES_NEW) : le code est enregistré et validé AVANT l'envoi du SMS, même si l'appelant
+     * est en lecture seule. Sinon un code peut partir par SMS sans exister en base (« Code expiré » à la saisie).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Sent send(String phone, OtpPurpose purpose, String clientIp) {
         AppProperties.RateLimit limits = props.getRateLimit();
         rateLimiter.check("otp-phone:" + phone, limits.getOtpPerPhone(), limits.getOtpWindow());

@@ -27,7 +27,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/stats/stats.page').then((m) => m.StatsPage) },
       { path: 'mes-zones', data: { roles: ORG_STAFF },
         loadComponent: () => import('./features/zones/my-zones.page').then((m) => m.MyZonesPage) },
-      { path: 'utilisateurs', data: { roles: ['MANAGER', 'ADMIN'] },
+      { path: 'utilisateurs', data: { roles: ['MANAGER', 'AGENT', 'ADMIN'] },
         loadComponent: () => import('./features/users/users.page').then((m) => m.UsersPage) },
       { path: 'organismes', data: { roles: NATIONAL },
         loadComponent: () => import('./features/admin/organizations.page').then((m) => m.OrganizationsPage) },

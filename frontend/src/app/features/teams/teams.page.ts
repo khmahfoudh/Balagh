@@ -68,7 +68,7 @@ const AVAILABILITY_COLORS: Record<string, string> = {
           } @empty {
             <p class="empty">{{ 'teams.noDrivers' | t }}</p>
           }
-          @if (auth.hasRole('MANAGER')) {
+          @if (auth.hasRole('MANAGER', 'AGENT')) {
             <a mat-button routerLink="/utilisateurs"><mat-icon>person_add</mat-icon>{{ 'teams.inviteDriver' | t }}</a>
           }
         </section>

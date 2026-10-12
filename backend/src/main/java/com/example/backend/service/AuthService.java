@@ -131,7 +131,7 @@ public class AuthService {
                 inv.getRole() != Role.DRIVER, inv.getExpiresAt());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public OtpSentResponse sendInvitationOtp(String token, String clientIp) {
         Invitation inv = validInvitation(token);
         return sent(PhoneNumbers.mask(inv.getPhone()), otp.send(inv.getPhone(), OtpPurpose.INVITATION, clientIp));
@@ -145,10 +145,12 @@ public class AuthService {
         if (needsPassword && (req.password() == null || req.password().length() < 8)) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "Choisissez un mot de passe d'au moins 8 caractères");
         }
-        otp.verify(inv.getPhone(), OtpPurpose.INVITATION, req.code());
+        // Vérifications AVANT de consommer le code SMS : un refus ici ne doit pas « brûler » le code
         if (users.existsByPhone(inv.getPhone())) {
             throw new ApiException(ErrorCode.PHONE_ALREADY_USED);
         }
+        checkApp(inv.getRole(), req.app());
+        otp.verify(inv.getPhone(), OtpPurpose.INVITATION, req.code());
 
         User user = new User();
         user.setFirstName(inv.getFirstName());
@@ -191,8 +193,13 @@ public class AuthService {
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new ApiException(ErrorCode.ACCOUNT_BLOCKED);
         }
-        if (app != null && user.getRole().allowedApp() != app) {
-            String hint = switch (user.getRole().allowedApp()) {
+        checkApp(user.getRole(), app);
+    }
+
+    /** Chaque application refuse les comptes d'un autre rôle (ex. un chauffeur sur le dashboard). */
+    private static void checkApp(Role role, ClientApp app) {
+        if (app != null && role.allowedApp() != app) {
+            String hint = switch (role.allowedApp()) {
                 case CITIZEN -> "Utilisez l'application Balagh citoyen.";
                 case DRIVER -> "Utilisez l'application Balagh Chauffeur.";
                 case DASHBOARD -> "Connectez-vous sur le tableau de bord web.";

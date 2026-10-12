@@ -43,6 +43,8 @@ const NAV: NavItem[] = [
   { path: '/organismes', icon: 'apartment', label: 'nav.organizations', roles: NATIONAL },
   { path: '/zones', icon: 'layers', label: 'nav.coverage', roles: NATIONAL },
   { path: '/utilisateurs', icon: 'manage_accounts', label: 'nav.users', roles: ['MANAGER', 'ADMIN'] },
+  // L'agent gère les chauffeurs de son organisme (même écran, limité aux chauffeurs)
+  { path: '/utilisateurs', icon: 'badge', label: 'nav.drivers', roles: ['AGENT'] },
   { path: '/parametres', icon: 'tune', label: 'nav.settings', roles: ['ADMIN'] },
   { path: '/audit', icon: 'history', label: 'nav.audit', roles: ['ADMIN'] },
 ];

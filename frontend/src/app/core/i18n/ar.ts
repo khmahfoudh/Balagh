@@ -15,6 +15,7 @@ export const AR: Record<TranslationKey, string> = {
   'nav.organizations': 'الهيئات',
   'nav.coverage': 'مناطق الهيئات',
   'nav.users': 'المستخدمون',
+  'nav.drivers': 'السائقون',
   'nav.settings': 'الإعدادات',
   'nav.audit': 'سجل التدقيق',
   'shell.menu': 'القائمة',
@@ -258,6 +259,7 @@ export const AR: Record<TranslationKey, string> = {
   // ---------- Utilisateurs, organismes, administration ----------
   'users.subtitleManager': 'أعوان وسائقو هيئتك.',
   'users.subtitleAdmin': 'كل حسابات المنصة.',
+  'users.subtitleAgent': 'سائقو هيئتك: ادعُهم واحظرهم عند الحاجة.',
   'users.invite': 'دعوة عون أو سائق',
   'users.role': 'الدور',
   'users.firstName': 'الاسم',

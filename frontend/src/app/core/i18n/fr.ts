@@ -13,6 +13,7 @@ export const FR = {
   'nav.organizations': 'Organismes',
   'nav.coverage': 'Zones des organismes',
   'nav.users': 'Utilisateurs',
+  'nav.drivers': 'Chauffeurs',
   'nav.settings': 'Paramètres',
   'nav.audit': "Journal d'audit",
   'shell.menu': 'Menu',
@@ -256,6 +257,7 @@ export const FR = {
   // ---------- Utilisateurs, organismes, administration ----------
   'users.subtitleManager': 'Agents et chauffeurs de votre organisme.',
   'users.subtitleAdmin': 'Tous les comptes de la plateforme.',
+  'users.subtitleAgent': 'Chauffeurs de votre organisme : invitez-les et bloquez-les si besoin.',
   'users.invite': 'Inviter un agent ou un chauffeur',
   'users.role': 'Rôle',
   'users.firstName': 'Prénom',

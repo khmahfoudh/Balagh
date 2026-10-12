@@ -64,17 +64,24 @@ public class UserService {
         return toMe(user);
     }
 
-    /** Le responsable invite un agent ou un chauffeur par numéro de téléphone (cahier des charges §5, étape 3). */
+    /**
+     * Invitation par numéro de téléphone (cahier des charges §5, étape 3) :
+     * le responsable invite des agents et des chauffeurs ; l'agent gère les chauffeurs de son organisme
+     * (choix du client, en plus du cahier des charges) et n'invite donc que des chauffeurs.
+     */
     @Transactional
-    public InvitationResponse invite(CurrentUser manager, InviteUserRequest req) {
+    public InvitationResponse invite(CurrentUser me, InviteUserRequest req) {
+        if (me.is(Role.AGENT) && req.role() != Role.DRIVER) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "Un agent invite uniquement des chauffeurs");
+        }
         if (req.role() != Role.AGENT && req.role() != Role.DRIVER) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "Un responsable invite des agents ou des chauffeurs");
         }
-        Organization org = organizations.findById(manager.organizationId()).orElseThrow(() -> ApiException.notFound("Organisme"));
+        Organization org = organizations.findById(me.organizationId()).orElseThrow(() -> ApiException.notFound("Organisme"));
         if (org.getStatus() != OrgStatus.ACTIVE) {
             throw new ApiException(ErrorCode.ORGANIZATION_NOT_ACTIVE);
         }
-        return createInvitation(req.firstName(), req.lastName(), req.phone(), req.email(), req.role(), org, manager.id());
+        return createInvitation(req.firstName(), req.lastName(), req.phone(), req.email(), req.role(), org, me.id());
     }
 
     /** Crée l'invitation et envoie le lien d'activation par SMS (console en développement). */
@@ -117,14 +124,17 @@ public class UserService {
         return list.stream().map(mapper::user).toList();
     }
 
-    /** Blocage : l'admin pour tous ; le responsable pour les agents et chauffeurs de son organisme. */
+    /**
+     * Blocage : l'admin pour tous ; le responsable pour les agents et chauffeurs de son organisme ;
+     * l'agent pour les chauffeurs de son organisme.
+     */
     @Transactional
     public UserSummary setStatus(CurrentUser me, UUID userId, UserStatus status) {
         User user = users.findById(userId).orElseThrow(() -> ApiException.notFound("Utilisateur"));
+        boolean sameOrg = user.getOrganization() != null && user.getOrganization().getId().equals(me.organizationId());
         boolean allowed = me.is(Role.ADMIN) && user.getRole() != Role.ADMIN
-                || me.is(Role.MANAGER) && user.getOrganization() != null
-                && user.getOrganization().getId().equals(me.organizationId())
-                && (user.getRole() == Role.AGENT || user.getRole() == Role.DRIVER);
+                || me.is(Role.MANAGER) && sameOrg && (user.getRole() == Role.AGENT || user.getRole() == Role.DRIVER)
+                || me.is(Role.AGENT) && sameOrg && user.getRole() == Role.DRIVER;
         if (!allowed) {
             throw ApiException.notFound("Utilisateur");
         }

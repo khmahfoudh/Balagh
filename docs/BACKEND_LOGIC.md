@@ -110,6 +110,9 @@ Pendant **72 h** après RÉSOLU, les citoyens qui avaient signalé répondent «
 | `AlertService` (tâches planifiées) | Urgent sans mission depuis 24 h → alerte au responsable et à l'admin ; zone sans incident traité depuis 30 j → alerte admin ; fin des 72 h de feedback |
 | `IncidentService.assertCanView()` | **Isolation** : un agent ne voit que les incidents de son organisme (sinon 404) |
 | `AuthService` | Code SMS 6 chiffres (5 min, 5 essais) ; JWT 15 min + refresh token révocable ; une app refuse les autres rôles |
+| `OtpService.send()` | Le code est enregistré dans sa propre transaction **avant** l'envoi du SMS (sinon un code envoyé pouvait ne pas exister en base) |
+| `AuthService.acceptInvitation()` | Numéro déjà utilisé et mauvaise application vérifiés **avant** de consommer le code : un refus ne « brûle » pas le code |
+| `UserService.invite()` / `setStatus()` | Responsable : invite et bloque ses agents et chauffeurs. **Agent : invite et bloque les chauffeurs de son organisme** (choix du client, en plus du cahier des charges). Admin : bloque tout compte sauf admin |
 | `CryptoService` | NNI chiffré AES-256-GCM + empreinte HMAC unique ; jamais renvoyé (sauf admin, avec audit) |
 
 ### 2.8 Temps réel : WebSocket STOMP `/ws`
