@@ -36,7 +36,8 @@ public final class AuthDtos {
     public record RefreshRequest(@NotBlank String refreshToken) {
     }
 
-    public record OtpSentResponse(String phone, long expiresInSeconds) {
+    /** devCode : rempli seulement en développement (OTP_EXPOSE_CODE=true), sinon null. */
+    public record OtpSentResponse(String phone, long expiresInSeconds, String devCode) {
     }
 
     public record TokenResponse(String accessToken, String refreshToken, long expiresIn, UserDtos.MeResponse user) {

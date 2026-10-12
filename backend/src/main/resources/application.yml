@@ -38,6 +38,14 @@ app:
   security:
     nni-encryption-key: ${NNI_ENCRYPTION_KEY}
     hash-secret: ${HASH_SECRET}
+  otp:
+    # Développement sans fournisseur SMS : le code est renvoyé à l'app. Toujours false en production.
+    expose-code-in-response: ${OTP_EXPOSE_CODE:false}
+  sms:
+    provider: ${SMS_PROVIDER:console}
+    twilio-account-sid: ${TWILIO_ACCOUNT_SID:}
+    twilio-auth-token: ${TWILIO_AUTH_TOKEN:}
+    twilio-from: ${TWILIO_FROM:}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:8081}
   storage:

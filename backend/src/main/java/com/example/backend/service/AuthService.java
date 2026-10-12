@@ -72,7 +72,7 @@ public class AuthService {
         user.setRole(Role.CITIZEN);
         user.setPreferredLang(req.preferredLang() == null ? "fr" : req.preferredLang());
         users.save(user);
-        return new OtpSentResponse(phone, otp.send(phone, OtpPurpose.LOGIN, clientIp));
+        return sent(phone, otp.send(phone, OtpPurpose.LOGIN, clientIp));
     }
 
     @Transactional
@@ -83,7 +83,7 @@ public class AuthService {
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new ApiException(ErrorCode.ACCOUNT_BLOCKED);
         }
-        return new OtpSentResponse(phone, otp.send(phone, OtpPurpose.LOGIN, clientIp));
+        return sent(phone, otp.send(phone, OtpPurpose.LOGIN, clientIp));
     }
 
     @Transactional
@@ -134,7 +134,7 @@ public class AuthService {
     @Transactional(readOnly = true)
     public OtpSentResponse sendInvitationOtp(String token, String clientIp) {
         Invitation inv = validInvitation(token);
-        return new OtpSentResponse(PhoneNumbers.mask(inv.getPhone()), otp.send(inv.getPhone(), OtpPurpose.INVITATION, clientIp));
+        return sent(PhoneNumbers.mask(inv.getPhone()), otp.send(inv.getPhone(), OtpPurpose.INVITATION, clientIp));
     }
 
     /** Activation : code SMS reçu sur le numéro invité + mot de passe (obligatoire pour le dashboard). */
@@ -172,6 +172,10 @@ public class AuthService {
         audit.log(user.getId(), "INVITATION_ACCEPTED", "USER", user.getId(), inv.getRole().name());
         checkCanLogin(user, req.app());
         return tokens.issue(user, userService.toMe(user));
+    }
+
+    private static OtpSentResponse sent(String shownPhone, OtpService.Sent sent) {
+        return new OtpSentResponse(shownPhone, sent.expiresInSeconds(), sent.devCode());
     }
 
     private Invitation validInvitation(String token) {

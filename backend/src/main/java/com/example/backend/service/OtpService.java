@@ -29,7 +29,14 @@ public class OtpService {
     private final RateLimiter rateLimiter;
     private final AppProperties props;
 
-    public long send(String phone, OtpPurpose purpose, String clientIp) {
+    /**
+     * devCode : le code lui-même, renvoyé UNIQUEMENT si app.otp.expose-code-in-response=true
+     * (développement sans fournisseur SMS). Toujours null en production.
+     */
+    public record Sent(long expiresInSeconds, String devCode) {
+    }
+
+    public Sent send(String phone, OtpPurpose purpose, String clientIp) {
         AppProperties.RateLimit limits = props.getRateLimit();
         rateLimiter.check("otp-phone:" + phone, limits.getOtpPerPhone(), limits.getOtpWindow());
         rateLimiter.check("otp-ip:" + clientIp, limits.getOtpPerIp(), limits.getOtpWindow());
@@ -43,7 +50,7 @@ public class OtpService {
         repository.save(otp);
         sms.send(phone, "Balagh MR : votre code est " + code + " (valable "
                 + props.getOtp().getTtl().toMinutes() + " min). Ne le communiquez à personne.");
-        return props.getOtp().getTtl().toSeconds();
+        return new Sent(props.getOtp().getTtl().toSeconds(), props.getOtp().isExposeCodeInResponse() ? code : null);
     }
 
     /**

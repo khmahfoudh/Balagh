@@ -14,6 +14,7 @@ public class AppProperties {
     private Jwt jwt = new Jwt();
     private Security security = new Security();
     private Otp otp = new Otp();
+    private Sms sms = new Sms();
     private Cors cors = new Cors();
     private Storage storage = new Storage();
     private RateLimit rateLimit = new RateLimit();
@@ -41,6 +42,18 @@ public class AppProperties {
     public static class Otp {
         private Duration ttl = Duration.ofMinutes(5);
         private int maxAttempts = 5;
+        /** Développement uniquement : renvoie le code dans la réponse (aucun SMS réel). Jamais en production. */
+        private boolean exposeCodeInResponse = false;
+    }
+
+    @Data
+    public static class Sms {
+        /** console (logs, développement) ou twilio. */
+        private String provider = "console";
+        private String twilioAccountSid;
+        private String twilioAuthToken;
+        /** Numéro ou nom d'expéditeur Twilio, ex. +15005550006 ou « Balagh ». */
+        private String twilioFrom;
     }
 
     @Data
