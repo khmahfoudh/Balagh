@@ -118,4 +118,35 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<!-- Maven lancé avec un JDK trop ancien (ex. JAVA_HOME système = JDK 17) : la compilation et
+		     spring-boot:run utilisent automatiquement un JDK ${java.version}+ installé sur la machine
+		     (~/.jdks, Program Files, variables JAVA*_HOME...), au lieu d'échouer avec UnsupportedClassVersionError. -->
+		<profile>
+			<id>jdk-toolchain</id>
+			<activation>
+				<jdk>(,21)</jdk>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-toolchains-plugin</artifactId>
+						<version>3.2.0</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>select-jdk-toolchain</goal>
+								</goals>
+								<configuration>
+									<version>[${java.version},)</version>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 </project>

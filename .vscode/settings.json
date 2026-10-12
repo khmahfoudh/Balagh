@@ -1,3 +1,8 @@
 {
+    // Extension « Language Support for Java » (redhat.java) épinglée en 1.55.0 : à partir de la 1.57,
+    // son compilateur (ECJ 4.42) signale à tort les constructeurs Lombok (@RequiredArgsConstructor)
+    // comme « Flexible Constructor Bodies » et écrit des .class cassés dans target/classes.
+    // Bugs : redhat-developer/vscode-java#4521, projectlombok/lombok#4084. Réactiver la mise à jour
+    // de l'extension quand Lombok publie le correctif.
     "java.configuration.updateBuildConfiguration": "disabled"
 }

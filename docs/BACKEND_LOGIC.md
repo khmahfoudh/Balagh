@@ -126,18 +126,57 @@ Chaque étape est enregistrée dans `incident_events` (qui, quand, quoi) : c'est
 
 ## 4. Voir la base de données
 
+La base utilisée par le backend est **`balagh_db`** (`DB_NAME` dans `backend/.env`). Les tables sont créées par
+Flyway au démarrage du backend (`src/main/resources/db/migration/V0` à `V5`), avec les données de démo si `DEMO_DATA=true`.
+La base `balagh` (sans `_db`) est l'ancien prototype : elle n'est plus utilisée.
+
 ### Avec pgAdmin 4 (installé avec PostgreSQL)
 
 1. Menu Démarrer → **pgAdmin 4**.
 2. Clic droit sur « Servers » → Register → Server.
    - Onglet General : Name = `Balagh local`
-   - Onglet Connection : Host = `localhost`, Port = `5432`, Database = `stagedb` (ou `balagh_db` une fois le script
-     de création exécuté), Username = `stage_user`, Password = celui de `backend/.env` (`DB_MIGRATION_PASSWORD`).
-3. Déplier : Databases → stagedb → Schemas → public → **Tables** (clic droit sur une table → View/Edit Data).
+   - Onglet Connection : Host = `localhost`, Port = `5432`, Database = `balagh_db`, Username = `postgres`,
+     Password = celui de `backend/.env` (`DB_MIGRATION_PASSWORD`).
+3. Déplier : Databases → balagh_db → Schemas → public → **Tables** (clic droit sur une table → View/Edit Data → All Rows).
 
-### Requêtes utiles (Tools → Query Tool)
+### Avec SQL Shell (psql)
+
+```
+Server [localhost]:            ← Entrée
+Database [postgres]: balagh_db
+Port [5432]:                   ← Entrée
+Username [postgres]:           ← Entrée
+Mot de passe :                 ← mot de passe de postgres
+```
+
+Puis, dans psql :
+
+| Commande | Effet |
+|---|---|
+| `\c balagh_db` | Se connecter à la base (si on est sur `postgres`) |
+| `\dt` | Liste des tables |
+| `\d incidents` | Colonnes, index et contraintes d'une table |
+| `\x auto` | Affichage vertical quand une ligne est trop large |
+| `SELECT * FROM users;` | Contenu d'une table (ne pas oublier le `;`) |
+| `SELECT version, description, success FROM flyway_schema_history;` | Migrations appliquées |
+| `\q` | Quitter |
+
+Les colonnes `geography` (`centroid`, `location`, `geom`) s'affichent en hexadécimal : utiliser `ST_AsText(col)` ou
+`ST_Y(col::geometry)` (latitude) / `ST_X(col::geometry)` (longitude).
+
+Accents mal affichés dans SQL Shell (`PropriÚtaire`) : taper `\! chcp 1252` puis relancer la requête.
+
+### Requêtes utiles (Tools → Query Tool, ou dans psql)
 
 ```sql
+-- Utilisateurs
+SELECT first_name, last_name, phone, role, status, trust_score FROM users ORDER BY role, phone;
+
+-- Derniers signalements avec leur auteur et leur incident
+SELECT r.created_at, u.first_name, i.category, i.status
+FROM reports r JOIN users u ON u.id = r.user_id JOIN incidents i ON i.id = r.incident_id
+ORDER BY r.created_at DESC;
+
 -- Incidents avec leur nombre de citoyens et leur organisme
 SELECT i.category, i.status, i.priority, i.reporters_count, o.name AS organisme,
        ST_Y(i.centroid::geometry) AS lat, ST_X(i.centroid::geometry) AS lng
@@ -159,15 +198,27 @@ SELECT key, category, value FROM settings ORDER BY key;
 ### En ligne de commande
 
 ```powershell
-& "C:\Program Files\PostgreSQL\18\bin\psql.exe" -h localhost -U stage_user -d stagedb
-# puis : \dt  (liste des tables)   \d incidents  (colonnes)   \q  (quitter)
+& "C:\Program Files\PostgreSQL\18\bin\psql.exe" -h localhost -U postgres -d balagh_db
 ```
 
 ---
 
 ## 5. Tester l'API
 
-1. Démarrer : `cd backend` puis `.\start-backend.ps1`.
+1. Démarrer : `cd backend` puis `.\start-backend.ps1`. Dans les logs, `Database: jdbc:postgresql://localhost:5432/balagh_db`
+   et `Successfully validated 6 migrations` confirment la connexion et la migration.
+   On peut aussi lancer directement `.\mvnw.cmd spring-boot:run`, même si le `JAVA_HOME` du système est un JDK 17 :
+   le profil Maven `jdk-toolchain` (pom.xml) choisit alors tout seul un JDK 21+ installé sur la machine
+   (log : `Toolchain in maven-compiler-plugin: JDK[...]` puis `Starting BackendApplication using Java 25...`).
+   Erreurs de démarrage connues :
+   - `UnsupportedClassVersionError ... class file version 65.0 ... only recognizes up to 61.0` : aucun JDK 21+ trouvé.
+     En installer un (ex. dans `~/.jdks`) ou utiliser `.\start-backend.ps1`.
+   - `ClassFormatError ... Code length 0` : `.class` cassés écrits par l'extension Java de VS Code (bug Lombok + ECJ,
+     d'où l'auto-build désactivé dans `.vscode/settings.json`). Lancer `.\mvnw.cmd clean spring-boot:run`.
+   - `PKIX path building failed` en téléchargeant une dépendance : l'antivirus Avast intercepte HTTPS et Java ne fait pas
+     confiance à son certificat. Ajouter `-Djavax.net.ssl.trustStoreType=Windows-ROOT` (magasin de certificats Windows)
+     à la commande Maven, ou désactiver l'analyse HTTPS d'Avast.
+   - `Port 8080 was already in use` : un backend tourne déjà (autre terminal) ; l'arrêter avec Ctrl+C.
 2. Ouvrir **http://localhost:8080/swagger-ui.html**.
 3. `POST /api/v1/auth/login` avec `{"phone": "+22222000002", "password": "Balagh@2026", "app": "DASHBOARD"}`
    (agent ONAS), copier `accessToken`, cliquer sur **Authorize** et le coller.
