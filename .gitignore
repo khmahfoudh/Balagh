@@ -1,0 +1,34 @@
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Builds
+target/
+dist/
+build/
+out/
+
+# Dépendances
+node_modules/
+
+# Caches outils
+.angular/
+.expo/
+.idea/
+*.iml
+*.log
+
+# Fichiers téléversés en local (stockage médias de dev)
+backend/uploads/
+uploads/
+
+# Ancien projet Expo : dépôt Git séparé (modèle create-expo-app),
+# remplacé par le monorepo mobile/ en phase 6
+Mobile/
+
+# Système
+.DS_Store
+Thumbs.db
