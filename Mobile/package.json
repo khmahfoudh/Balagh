@@ -1,0 +1,14 @@
+{
+  "name": "balagh-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "citizen": "npm --workspace apps/citizen run start",
+    "driver": "npm --workspace apps/driver run start",
+    "typecheck": "npm --workspaces --if-present run typecheck"
+  }
+}
