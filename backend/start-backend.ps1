@@ -20,4 +20,6 @@ if (-not (Test-Path '.env')) {
     exit 1
 }
 
-.\mvnw.cmd spring-boot:run
+# clean : Maven recompile tout. Sinon il peut réutiliser des .class écrits par un éditeur (extension Java de
+# VS Code) et le backend plante au démarrage avec « Unresolved compilation problems ».
+.\mvnw.cmd clean spring-boot:run
