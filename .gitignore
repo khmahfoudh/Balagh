@@ -29,6 +29,9 @@ uploads/
 # remplacé par le monorepo mobile/ en phase 6
 Mobile/
 
+# Clone local du dépôt GitHub (dépôt Git séparé, ne pas versionner)
+Balagh/
+
 # Système
 .DS_Store
 Thumbs.db
