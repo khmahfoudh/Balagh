@@ -1,0 +1,108 @@
+@use '@angular/material' as mat;
+
+// Balagh MR : vert et or du drapeau, rouge réservé à l'urgence (mêmes couleurs que les apps mobiles)
+:root {
+  --green: #0b6e4f;
+  --green-dark: #08553d;
+  --green-light: #e4f2ec;
+  --gold: #e9b824;
+  --red: #c0392b;
+  --red-light: #fdecea;
+  --amber: #d68c00;
+  --blue: #2f6fd6;
+  --resolved: #0f766e;
+  --bg: #f4f6f5;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #1f2933;
+  --muted: #64748b;
+  --radius: 12px;
+}
+
+html {
+  color-scheme: light;
+  @include mat.theme((
+    color: (primary: mat.$green-palette, tertiary: mat.$yellow-palette, theme-type: light),
+    typography: (plain-family: ('Inter', 'Noto Sans Arabic', system-ui, sans-serif),
+      brand-family: ('Inter', 'Noto Sans Arabic', system-ui, sans-serif)),
+    density: -1,
+  ));
+  // Vert exact de la marque
+  @include mat.theme-overrides((primary: #0b6e4f, on-primary: #ffffff, primary-container: #e4f2ec,
+    on-primary-container: #08553d));
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'Noto Sans Arabic', system-ui, sans-serif;
+  font-size: 14px;
+}
+[dir='rtl'] body { font-family: 'Noto Sans Arabic', 'Inter', system-ui, sans-serif; }
+a { color: var(--green); }
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+// ---------- Mise en page des pages ----------
+.page { padding: 24px; max-width: 1400px; margin: 0 auto; box-sizing: border-box; }
+.page-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.page-header h1 { margin: 0; font-size: 22px; font-weight: 700; }
+.page-header .subtitle { color: var(--muted); margin: 2px 0 0; }
+.page-header .spacer { flex: 1; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.card h2 { margin: 0 0 12px; font-size: 16px; font-weight: 700; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.row { display: flex; align-items: center; gap: 8px; }
+.wrap { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 0 12px; align-items: center; }
+.filters mat-form-field { width: 190px; }
+.empty { padding: 24px; text-align: center; color: var(--muted); }
+.error-banner { background: var(--red-light); color: var(--red); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; }
+.info-banner { background: var(--green-light); color: var(--green-dark); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; }
+.mono { font-family: ui-monospace, 'Cascadia Mono', monospace; font-size: 12px; word-break: break-all; }
+
+// ---------- Badges de statut : pastille colorée + texte en encre foncée (jamais le texte en couleur) ----------
+.badge {
+  --c: var(--muted);
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  color: var(--text); background: color-mix(in srgb, var(--c) 12%, white);
+}
+.badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.badge.urgent { color: #fff; background: var(--red); letter-spacing: .03em; }
+.badge.urgent::before { background: #fff; }
+
+// ---------- Tableaux ----------
+table.mat-mdc-table { background: transparent; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: #f8faf9; }
+.table-wrap { overflow-x: auto; }
+
+// ---------- Carte : pastille d'un incident ----------
+.map-pin {
+  min-width: 26px; height: 26px; padding: 0 6px; box-sizing: border-box;
+  border-radius: 999px; border: 2px solid #fff; box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+  font: 700 12px/22px Inter, system-ui, sans-serif; text-align: center; cursor: pointer;
+}
+// Groupe de points (zoom arrière) : gris foncé, plus grand, jamais une couleur de statut
+.map-pin.map-cluster { min-width: 34px; height: 34px; line-height: 30px; background: #1f2933; color: #fff; outline: 4px solid rgb(31 41 51 / 25%); }
+
+// ---------- Alerte URGENT (snackbar) ----------
+.urgent-snack {
+  --mat-snack-bar-container-color: var(--red);
+  --mat-snack-bar-supporting-text-color: #fff;
+  --mat-snack-bar-button-color: #fff;
+}
+
+@media (max-width: 720px) {
+  .page { padding: 16px; }
+  .filters mat-form-field { width: 100%; }
+}

@@ -5,11 +5,13 @@ import com.example.backend.entity.IncidentEvent;
 import com.example.backend.entity.User;
 import com.example.backend.enums.*;
 import com.example.backend.notification.NotificationService;
+import com.example.backend.realtime.RealtimeEvents.IncidentChanged;
 import com.example.backend.repository.IncidentEventRepository;
 import com.example.backend.repository.ReportRepository;
 import com.example.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -32,6 +34,7 @@ public class IncidentWorkflow {
     private final UserRepository users;
     private final SettingsService settings;
     private final NotificationService notifications;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** Ajoute une ligne à la chronologie (actorId null = action automatique du système). */
     public void record(Incident incident, IncidentEventType type, IncidentStatus from, IncidentStatus to,
@@ -44,6 +47,10 @@ public class IncidentWorkflow {
         event.setActor(actorId == null ? null : users.getReferenceById(actorId));
         event.setNote(note);
         events.save(event);
+        // Dashboard en temps réel : envoyé sur le WebSocket après le commit
+        eventPublisher.publishEvent(new IncidentChanged(incident.getId(),
+                incident.getOrganization() == null ? null : incident.getOrganization().getId(),
+                incident.getCategory(), incident.getStatus(), incident.getPriority(), type, Instant.now()));
     }
 
     /** Change le statut, l'enregistre dans la chronologie. */

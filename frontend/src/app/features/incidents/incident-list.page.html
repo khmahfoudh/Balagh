@@ -1,0 +1,111 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>{{ 'nav.incidents' | t }}</h1>
+      <p class="subtitle">{{ 'incidents.subtitle' | t: { n: total() } }}</p>
+    </div>
+    <span class="spacer"></span>
+    <button mat-stroked-button (click)="exportCsv()" [disabled]="exporting() || total() === 0">
+      <mat-icon>download</mat-icon>{{ 'common.exportCsv' | t }}
+    </button>
+  </div>
+
+  <div class="filters">
+    <mat-form-field>
+      <mat-label>{{ 'filters.category' | t }}</mat-label>
+      <mat-select [(ngModel)]="category" (selectionChange)="applyFilters()">
+        <mat-option [value]="null">{{ 'filters.all' | t }}</mat-option>
+        @for (c of categories(); track c) {
+          <mat-option [value]="c">{{ c | label: 'category' }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'filters.status' | t }}</mat-label>
+      <mat-select [(ngModel)]="statuses" multiple (selectionChange)="applyFilters()">
+        @for (s of STATUSES; track s) {
+          <mat-option [value]="s">{{ s | label: 'status' }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'filters.priority' | t }}</mat-label>
+      <mat-select [(ngModel)]="priority" (selectionChange)="applyFilters()">
+        <mat-option [value]="null">{{ 'filters.all' | t }}</mat-option>
+        <mat-option value="URGENT">{{ 'URGENT' | label: 'priority' }}</mat-option>
+        <mat-option value="NORMAL">{{ 'NORMAL' | label: 'priority' }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'filters.zone' | t }}</mat-label>
+      <mat-select [(ngModel)]="zone" (selectionChange)="applyFilters()">
+        <mat-option [value]="null">{{ 'filters.allZones' | t }}</mat-option>
+        @for (z of zones(); track z.id) {
+          <mat-option [value]="z.id">{{ i18n.lang === 'ar' ? z.nameAr : z.nameFr }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field class="date-range">
+      <mat-label>{{ 'filters.period' | t }}</mat-label>
+      <mat-date-range-input [rangePicker]="picker">
+        <input matStartDate [(ngModel)]="from" [placeholder]="'filters.from' | t" (dateChange)="applyFilters()" />
+        <input matEndDate [(ngModel)]="to" [placeholder]="'filters.to' | t" (dateChange)="applyFilters()" />
+      </mat-date-range-input>
+      <mat-datepicker-toggle matIconSuffix [for]="picker" />
+      <mat-date-range-picker #picker />
+    </mat-form-field>
+    @if (national) {
+      <mat-slide-toggle [(ngModel)]="unassigned" (change)="applyFilters()">{{ 'filters.unassigned' | t }}</mat-slide-toggle>
+    }
+    <button mat-button (click)="reset()">{{ 'filters.reset' | t }}</button>
+  </div>
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  <div class="card table-card" [class.dim]="loading()">
+    <div class="table-wrap">
+      <table mat-table [dataSource]="rows()">
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>{{ 'filters.status' | t }}</th>
+          <td mat-cell *matCellDef="let i"><app-incident-status [status]="i.status" [priority]="i.priority" /></td>
+        </ng-container>
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>{{ 'filters.category' | t }}</th>
+          <td mat-cell *matCellDef="let i">
+            <span class="icon material-symbols-outlined" aria-hidden="true">{{ ICONS[i.category] }}</span>{{ i.category | label: 'category' }}
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="place">
+          <th mat-header-cell *matHeaderCellDef>{{ 'incidents.place' | t }}</th>
+          <td mat-cell *matCellDef="let i">{{ i.place ?? '—' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="reporters">
+          <th mat-header-cell *matHeaderCellDef>{{ 'incidents.citizens' | t }}</th>
+          <td mat-cell *matCellDef="let i" class="count">{{ i.reportersCount }}</td>
+        </ng-container>
+        <ng-container matColumnDef="organization">
+          <th mat-header-cell *matHeaderCellDef>{{ 'incidents.organization' | t }}</th>
+          <td mat-cell *matCellDef="let i">{{ i.organizationName ?? ('incidents.unassigned' | t) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="first">
+          <th mat-header-cell *matHeaderCellDef>{{ 'incidents.first' | t }}</th>
+          <td mat-cell *matCellDef="let i">{{ i.firstReportedAt | ago }}</td>
+        </ng-container>
+        <ng-container matColumnDef="last">
+          <th mat-header-cell *matHeaderCellDef>{{ 'incidents.last' | t }}</th>
+          <td mat-cell *matCellDef="let i">{{ i.lastReportedAt | ago }}</td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns" class="clickable" (click)="open(row)"
+            tabindex="0" (keydown.enter)="open(row)"></tr>
+      </table>
+    </div>
+    @if (rows().length === 0 && !loading()) {
+      <p class="empty">{{ 'incidents.none' | t }}</p>
+    }
+    <mat-paginator [length]="total()" [pageIndex]="page" [pageSize]="size" [pageSizeOptions]="[20, 50, 100]"
+                   (page)="changePage($event)" />
+  </div>
+</div>

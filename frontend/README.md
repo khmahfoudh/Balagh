@@ -1,59 +1,79 @@
-# Frontend
+# Balagh MR : dashboard web (Angular 21)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.26.
+Dashboard des agents, responsables d'organisme, administrateur national et vue État (cahier des charges §7.3,
+maquettes 16 à 20). Français et arabe (droite à gauche), mise à jour en temps réel par WebSocket.
 
-## Development server
+## Lancer
 
-To start a local development server, run:
+Prérequis : le backend démarré (`backend\start-backend.ps1`, port 8080).
 
-```bash
-ng serve
+```powershell
+cd frontend
+npm install                       # une seule fois
+copy public\config.example.json public\config.json
+npm start                         # http://localhost:4200
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+`public/config.json` (non versionné) :
 
-## Code scaffolding
+| Clé | Rôle |
+|---|---|
+| `apiUrl` | Adresse du backend, `http://localhost:8080` en local |
+| `googleMapsApiKey` | Clé **Maps JavaScript API**. Vide : la carte s'affiche grisée « For development purposes only » avec un message de Google |
+| `googleMapsMapId` | Map ID Google (marqueurs avancés). `DEMO_MAP_ID` convient au développement |
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Clé Google Maps : Google Cloud Console → activer **Maps JavaScript API** → créer une clé, la **restreindre** au domaine
+du dashboard (référents HTTP `http://localhost:4200/*`, puis le domaine de production) → la coller dans `config.json`.
+En production, créer aussi un Map ID (Google Maps Platform → Map management) et le mettre dans `googleMapsMapId`.
 
-```bash
-ng generate component component-name
+## Comptes de démonstration
+
+Mot de passe commun : `DEMO_USERS_PASSWORD` de `backend/.env`. Le téléphone se tape sur 8 chiffres ou avec `+222`.
+
+| Rôle | Téléphone | Ce qu'il voit et fait |
+|---|---|---|
+| Agent ONAS | 22000002 | Incidents de l'ONAS, **assigne les missions**, confirme, rejette, doublons |
+| Responsable ONAS | 22000001 | Comme l'agent + ses zones, ses véhicules, invite agents et chauffeurs |
+| Agent / responsable déchets | 21000002 / 21000001 | Idem pour l'entreprise de déchets |
+| Admin national | 20000001 | Vue nationale, organismes, zones, utilisateurs, paramètres, audit (sans assigner) |
+| Vue État | 20000002 | Lecture seule : vue nationale, routes non assignées, performance, exports |
+
+Les chauffeurs et les citoyens n'ont pas accès au dashboard (applications mobiles).
+
+## Écrans
+
+| Route | Rôles | Contenu |
+|---|---|---|
+| `/tableau-de-bord` | tous | Compteurs, carte en temps réel (cercle rouge autour des urgents), urgents, alertes |
+| `/incidents`, `/incidents/:id` | tous | Liste filtrable + export CSV ; détail avec photos, chronologie, **assignation** |
+| `/missions` | tous | Missions en cours, terminées, annulées |
+| `/equipes` | agent, responsable | Chauffeurs (disponibilité, mission en cours), véhicules |
+| `/statistiques` | tous | Incidents par semaine, zones les plus touchées, carte de chaleur |
+| `/mes-zones` | agent, responsable | Zones d'intervention (wilaya → moughataa → commune) |
+| `/utilisateurs` | responsable, admin | Invitations, blocage, NNI (admin, journalisé) |
+| `/organismes`, `/zones` | admin, État | Création d'organisme + invitation du responsable ; libération et transfert de zones |
+| `/parametres`, `/audit` | admin | Seuils d'urgence ; journal d'audit |
+| `/etat/performance`, `/etat/exports` | admin, État | Performance comparée ; exports CSV / GeoJSON anonymisés |
+| `/activation?token=...` | invité | Activation du compte (code SMS + mot de passe) |
+
+## Organisation du code
+
+```
+src/app/
+├── core/       services : API, connexion (JWT), temps réel (STOMP), alertes sonores, traductions FR/AR
+├── layout/     menu latéral et barre du haut
+├── shared/     carte (seul fichier lié à Google Maps), badges de statut, graphiques
+└── features/   un dossier par écran
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+- Les textes sont dans `core/i18n/fr.ts` et `core/i18n/ar.ts` ; une clé arabe manquante est une erreur de compilation.
+- La couleur d'un incident (`core/ui.ts`) : rouge = urgent, ambre = nouveau, bleu = en cours, vert-bleu = résolu.
+  Ce jeu de couleurs a été vérifié pour les daltoniens.
+- Le son des alertes exige un clic (règle des navigateurs) : bouton « Activer le son » dans la barre du haut.
 
-```bash
-ng generate --help
+## Vérifier
+
+```powershell
+npx ng test --watch=false   # tests unitaires (Vitest)
+npm run build                # build de production dans dist/frontend/browser
 ```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

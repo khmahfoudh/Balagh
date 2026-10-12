@@ -88,6 +88,10 @@ contre deux requêtes simultanées.
 | Agent | `cancel()` | Mission annulée, incident redevient CONFIRMÉ |
 
 - Au plus **1 mission active par incident** (index unique en base).
+- Dashboard : `MissionService.list()` (`GET /api/v1/missions?status=...`) liste les missions, plus récentes d'abord.
+  **Isolation** : un agent ou un responsable ne voit que les missions de son organisme ; l'admin et l'État voient tout.
+- Seuls l'**agent** et le **responsable** de l'organisme assignent ou annulent (le chauffeur doit appartenir à leur
+  organisme). L'admin national supervise sans assigner.
 - Le chauffeur avance étape par étape ; renvoyer la même étape ne fait rien (utile pour la file hors ligne).
 - `myActive()` trie les missions : urgentes d'abord, puis par distance au camion.
 
@@ -107,6 +111,32 @@ Pendant **72 h** après RÉSOLU, les citoyens qui avaient signalé répondent «
 | `IncidentService.assertCanView()` | **Isolation** : un agent ne voit que les incidents de son organisme (sinon 404) |
 | `AuthService` | Code SMS 6 chiffres (5 min, 5 essais) ; JWT 15 min + refresh token révocable ; une app refuse les autres rôles |
 | `CryptoService` | NNI chiffré AES-256-GCM + empreinte HMAC unique ; jamais renvoyé (sauf admin, avec audit) |
+
+### 2.8 Temps réel : WebSocket STOMP `/ws`
+
+Le dashboard se met à jour **sans recharger la page** (carte, compteurs, listes) et sonne dès qu'un incident passe URGENT.
+
+| Élément | Rôle |
+|---|---|
+| `IncidentWorkflow.record()` | Chaque ligne de chronologie publie un événement `IncidentChanged` (incident, organisme, statut, priorité, type) |
+| `NotificationService.notify()` | Chaque notification enregistrée publie un événement `UserNotified` pour son destinataire |
+| `RealtimePublisher` | Envoie ces événements **après le commit** (une transaction annulée n'envoie rien) |
+| `StompAuthInterceptor` | Connexion : JWT obligatoire (en-tête `Authorization: Bearer ...`). Abonnement : vérifié selon le rôle |
+| `WebSocketConfig` | Point d'entrée `/ws`, mêmes origines autorisées que le CORS (`CORS_ALLOWED_ORIGINS`) |
+
+| Canal | Qui peut s'abonner | Contenu |
+|---|---|---|
+| `/topic/org/{orgId}/incidents` | Agents et responsable **de cet organisme** | Changements de ses incidents |
+| `/topic/national/incidents` | Admin national et État | Changements de tous les incidents |
+| `/user/queue/notifications` | Chaque utilisateur connecté (les siennes) | Ses notifications (URGENT, incident rouvert...) |
+
+**Exemple** : le 5e citoyen signale l'eau stagnante d'El Mina → `PRIORITY_URGENT` est enregistré → après le commit,
+les agents de l'ONAS et la vue nationale reçoivent l'événement → le dashboard affiche l'alerte rouge, bipe (si le son est
+activé) et recharge ses compteurs. Mesuré en local : alerte affichée environ 2 s après l'envoi du signalement.
+
+Le broker est en mémoire : il suffit tant qu'il n'y a qu'**une seule instance** du backend. Avec plusieurs instances, il
+faudra un broker externe (RabbitMQ STOMP). Une session WebSocket déjà ouverte reste valide après l'expiration du JWT
+(15 min) ; le dashboard renouvelle le jeton à chaque reconnexion.
 
 ---
 
@@ -223,6 +253,7 @@ SELECT key, category, value FROM settings ORDER BY key;
 3. `POST /api/v1/auth/login` avec `{"phone": "+22222000002", "password": "Balagh@2026", "app": "DASHBOARD"}`
    (agent ONAS), copier `accessToken`, cliquer sur **Authorize** et le coller.
 4. Essayer `GET /api/v1/incidents` : seuls les incidents de l'ONAS apparaissent, dont 1 URGENT (5 citoyens).
+5. Le dashboard Angular fait tout cela avec une interface : voir `frontend/README.md`.
 
 | Compte de démo | Téléphone | Mot de passe |
 |---|---|---|

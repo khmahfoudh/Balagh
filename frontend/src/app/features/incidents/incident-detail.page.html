@@ -1,0 +1,305 @@
+<div class="page">
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  @if (detail(); as d) {
+    @let i = d.incident;
+    <nav class="crumbs">
+      <a routerLink="/incidents">{{ 'nav.incidents' | t }}</a>
+      <mat-icon>{{ i18n.dir === 'rtl' ? 'chevron_left' : 'chevron_right' }}</mat-icon>
+      <span>{{ i.category | label: 'category' }} · {{ i.place ?? '—' }}</span>
+    </nav>
+
+    <div class="layout">
+      <div class="main">
+        <!-- En-tête -->
+        <section class="card head">
+          <div class="row wrap">
+            <app-incident-status [status]="i.status" [priority]="i.priority" />
+            @if (d.confirmationMode) {
+              <span class="badge" [style.--c]="'var(--green)'">
+                {{ (d.confirmationMode === 'AUTO' ? 'detail.autoConfirmed' : 'detail.manualConfirmed') | t }}
+              </span>
+            }
+            @if (d.reopenedCount > 0) {
+              <span class="badge" [style.--c]="'var(--amber)'">{{ 'detail.reopened' | t: { n: d.reopenedCount } }}</span>
+            }
+          </div>
+          <h1>
+            <span class="material-symbols-outlined" aria-hidden="true">{{ ICONS[i.category] }}</span>
+            {{ i.category | label: 'category' }} · {{ i.place ?? '—' }}
+          </h1>
+          <p class="muted">
+            {{ i.latitude.toFixed(4) }}, {{ i.longitude.toFixed(4) }}
+            · {{ d.location.commune ?? d.location.moughataa ?? '—' }}, {{ d.location.wilaya ?? '—' }}
+            · {{ i.organizationName ?? ('incidents.unassigned' | t) }}
+          </p>
+          <p>
+            <strong>{{ 'detail.citizens' | t: { n: i.reportersCount } }}</strong>
+            · {{ 'detail.firstReport' | t: { ago: (i.firstReportedAt | ago) } }}
+            · {{ 'detail.lastReport' | t: { ago: (i.lastReportedAt | ago) } }}
+          </p>
+          @if (d.rejectionReason) {
+            <p class="info-banner">{{ 'detail.rejectedBecause' | t }} {{ d.rejectionReason | label: 'reason' }}
+              @if (d.rejectionNote) { — {{ d.rejectionNote }} }</p>
+          }
+          @if (d.duplicateOfId) {
+            <p class="info-banner">{{ 'detail.duplicateOf' | t }}
+              <a [routerLink]="['/incidents', d.duplicateOfId]">{{ 'detail.seeOriginal' | t }}</a></p>
+          }
+        </section>
+
+        <!-- Avant / après -->
+        @if (d.proof) {
+          <section class="card">
+            <h2>{{ 'detail.beforeAfter' | t }}</h2>
+            <div class="before-after">
+              <figure>
+                @if (before(); as b) {
+                  <img [src]="b.url" [alt]="'detail.before' | t" />
+                }
+                <figcaption>{{ 'detail.before' | t }}</figcaption>
+              </figure>
+              <figure>
+                <img [src]="d.proof.url" [alt]="'detail.after' | t" />
+                <figcaption>{{ 'detail.after' | t }} · {{ d.proof.capturedAt | dateTime }}</figcaption>
+              </figure>
+            </div>
+          </section>
+        }
+
+        <!-- Photos et vidéos -->
+        <section class="card">
+          <h2>{{ 'detail.media' | t: { n: photos().length } }}</h2>
+          <div class="gallery">
+            @for (m of photos(); track m.id) {
+              <a class="media" [href]="m.url" target="_blank" rel="noopener">
+                @if (m.type === 'VIDEO') {
+                  <video [src]="m.url" preload="metadata" muted></video>
+                  <span class="video-tag material-symbols-outlined" aria-hidden="true">play_circle</span>
+                } @else {
+                  <img [src]="m.url" [alt]="'detail.photo' | t" loading="lazy" />
+                }
+              </a>
+            } @empty {
+              <p class="muted">{{ 'detail.noMedia' | t }}</p>
+            }
+          </div>
+          @if (!auth.hasRole('ADMIN')) {
+            <p class="muted small">{{ 'detail.anonymous' | t }}</p>
+          }
+        </section>
+
+        <!-- Signalements -->
+        <section class="card">
+          <h2>{{ 'detail.reports' | t: { n: d.reports.length } }}</h2>
+          <ul class="reports">
+            @for (r of d.reports; track r.id) {
+              <li>
+                <span class="muted small">{{ r.createdAt | dateTime }} · {{ r.source | label: 'source' }}</span>
+                @if (r.reporter) {
+                  <span class="reporter">{{ r.reporter.name }} · {{ r.reporter.phone }} ·
+                    {{ 'detail.trust' | t: { n: r.reporter.trustScore } }}</span>
+                }
+                @if (r.description) {
+                  <span>« {{ r.description }} »</span>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+
+        <!-- Chronologie -->
+        <section class="card">
+          <h2>{{ 'detail.timeline' | t }}</h2>
+          <ol class="timeline">
+            @for (e of d.timeline; track $index) {
+              <li>
+                <span class="when" [title]="e.at | dateTime">{{ e.at | ago }}</span>
+                <span class="what">
+                  <strong>{{ e.type | label: 'event' }}</strong>
+                  @if (e.toStatus && e.fromStatus !== e.toStatus) {
+                    · {{ e.toStatus | label: 'status' }}
+                  }
+                  @if (e.note) {
+                    <span class="muted"> — {{ e.note }}</span>
+                  }
+                  <span class="actor">{{ e.actor }}</span>
+                </span>
+              </li>
+            }
+          </ol>
+          @if (d.actions.assign) {
+            <p class="next">{{ 'detail.nextStep' | t }}</p>
+          }
+        </section>
+
+        <!-- Missions -->
+        @if (d.missions.length > 0) {
+          <section class="card">
+            <h2>{{ 'detail.missions' | t }}</h2>
+            @for (m of d.missions; track m.id) {
+              <div class="mission">
+                <app-mission-status [status]="m.status" />
+                <span class="grow">{{ m.driverName }} · {{ m.vehiclePlate ?? '—' }}</span>
+                <span class="muted small">{{ 'detail.assignedAgo' | t: { ago: (m.assignedAt | ago) } }}</span>
+              </div>
+            }
+          </section>
+        }
+
+        @if (d.feedback; as f) {
+          <section class="card">
+            <h2>{{ 'detail.feedback' | t }}</h2>
+            <p>{{ 'detail.feedbackCounts' | t: { yes: f.confirmations, no: f.disputes } }}
+              · {{ 'detail.feedbackCloses' | t: { ago: (f.closesAt | ago) } }}</p>
+          </section>
+        }
+      </div>
+
+      <aside class="side">
+        <section class="card">
+          <h2>{{ 'detail.location' | t }}</h2>
+          <app-map class="mini-map" [points]="point()" />
+          <a class="small" target="_blank" rel="noopener"
+             [href]="'https://www.google.com/maps/search/?api=1&query=' + i.latitude + ',' + i.longitude">
+            {{ 'detail.openInMaps' | t }}
+          </a>
+        </section>
+
+        <section class="card actions">
+          <h2>{{ 'detail.actions' | t }}</h2>
+
+          @if (d.actions.confirm) {
+            <button mat-flat-button class="full" (click)="confirm()" [disabled]="busy()">
+              <mat-icon>verified</mat-icon>{{ 'detail.confirm' | t }}
+            </button>
+          }
+
+          <!-- Assigner un chauffeur et un véhicule -->
+          @if (d.actions.assign) {
+            <div class="assign">
+              <h3>{{ 'detail.assignTo' | t }}</h3>
+              <mat-form-field class="full">
+                <mat-label>{{ 'detail.driver' | t }}</mat-label>
+                <mat-select [(ngModel)]="driverId">
+                  @for (dr of drivers(); track dr.id) {
+                    <mat-option [value]="dr.id" [disabled]="dr.availability === 'BLOQUE'">{{ driverLabel(dr) }}</mat-option>
+                  }
+                </mat-select>
+                @if (drivers().length === 0) {
+                  <mat-hint>{{ 'detail.noDriver' | t }}</mat-hint>
+                }
+              </mat-form-field>
+              <mat-form-field class="full">
+                <mat-label>{{ 'detail.vehicle' | t }}</mat-label>
+                <mat-select [(ngModel)]="vehicleId">
+                  <mat-option [value]="null">{{ 'detail.noVehicle' | t }}</mat-option>
+                  @for (v of vehicles(); track v.id) {
+                    <mat-option [value]="v.id" [disabled]="v.outOfService">
+                      {{ v.plate }} · {{ v.type }} · {{ v.availability | label: 'vehicle' }}
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field class="full">
+                <mat-label>{{ 'detail.due' | t }}</mat-label>
+                <mat-select [(ngModel)]="due">
+                  @for (option of dues; track option) {
+                    <mat-option [value]="option">{{ option | label: 'due' }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              @if (selectedDriver()?.currentMission; as current) {
+                <p class="muted small">{{ 'detail.driverBusy' | t: { place: current.place ?? '—' } }}</p>
+              }
+              <button mat-flat-button class="full" (click)="assign()" [disabled]="busy() || !driverId">
+                <mat-icon>local_shipping</mat-icon>{{ 'detail.assign' | t }}
+              </button>
+            </div>
+          }
+
+          @if (d.activeMission; as m) {
+            <div class="active-mission">
+              <h3>{{ 'detail.activeMission' | t }}</h3>
+              <div class="row"><app-mission-status [status]="m.status" /><span>{{ m.driverName }}</span></div>
+              <p class="muted small">{{ m.vehiclePlate ?? '—' }} · {{ 'detail.assignedAgo' | t: { ago: (m.assignedAt | ago) } }}
+                @if (m.dueAt) { · {{ 'detail.dueAt' | t }} {{ m.dueAt | dateTime }} }</p>
+            </div>
+          }
+
+          @if (d.actions.cancelMission || d.actions.markDuplicate || d.actions.reject) {
+            <h3>{{ 'detail.otherActions' | t }}</h3>
+          }
+          @if (d.actions.cancelMission) {
+            <button mat-stroked-button class="full" (click)="openPanel('cancel')">{{ 'detail.cancelMission' | t }}</button>
+            @if (panel() === 'cancel') {
+              <div class="panel">
+                <mat-form-field class="full">
+                  <mat-label>{{ 'detail.cancelReason' | t }}</mat-label>
+                  <input matInput [(ngModel)]="cancelReason" maxlength="300" />
+                </mat-form-field>
+                <button mat-flat-button color="warn" (click)="cancelMission()" [disabled]="busy() || !cancelReason.trim()">
+                  {{ 'detail.confirmCancel' | t }}
+                </button>
+              </div>
+            }
+          }
+          @if (d.actions.markDuplicate) {
+            <button mat-stroked-button class="full" (click)="openPanel('duplicate')">{{ 'detail.markDuplicate' | t }}</button>
+            @if (panel() === 'duplicate') {
+              <div class="panel">
+                <mat-form-field class="full">
+                  <mat-label>{{ 'detail.original' | t }}</mat-label>
+                  <mat-select [(ngModel)]="duplicateOf">
+                    @for (c of candidates(); track c.id) {
+                      <mat-option [value]="c.id">
+                        {{ c.place ?? '—' }} · {{ 'detail.citizensShort' | t: { n: c.reportersCount } }} · {{ c.distance }} m
+                      </mat-option>
+                    } @empty {
+                      <mat-option disabled>{{ 'detail.noCandidate' | t }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <button mat-flat-button (click)="markDuplicate()" [disabled]="busy() || !duplicateOf">
+                  {{ 'detail.confirmDuplicate' | t }}
+                </button>
+              </div>
+            }
+          }
+          @if (d.actions.reject) {
+            <button mat-stroked-button class="full danger" (click)="openPanel('reject')">{{ 'detail.reject' | t }}</button>
+            @if (panel() === 'reject') {
+              <div class="panel">
+                <mat-form-field class="full">
+                  <mat-label>{{ 'detail.reason' | t }}</mat-label>
+                  <mat-select [(ngModel)]="reason">
+                    @for (r of REASONS; track r) {
+                      <mat-option [value]="r">{{ r | label: 'reason' }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field class="full">
+                  <mat-label>{{ 'detail.note' | t }}</mat-label>
+                  <textarea matInput [(ngModel)]="note" rows="2" maxlength="500"></textarea>
+                </mat-form-field>
+                <p class="muted small">{{ 'detail.rejectHint' | t }}</p>
+                <button mat-flat-button color="warn" (click)="reject()" [disabled]="busy() || !reason">
+                  {{ 'detail.confirmReject' | t }}
+                </button>
+              </div>
+            }
+          }
+
+          @if (!d.actions.assign && !d.actions.confirm && !d.actions.reject && !d.actions.cancelMission && !d.actions.markDuplicate) {
+            <p class="muted small">{{ (auth.hasRole('ADMIN', 'AUTHORITY') ? 'detail.readOnly' : 'detail.noAction') | t }}</p>
+          }
+          <p class="muted small audit">{{ 'detail.auditNote' | t }}</p>
+        </section>
+      </aside>
+    </div>
+  } @else if (!error()) {
+    <p class="muted">{{ 'common.loading' | t }}</p>
+  }
+</div>

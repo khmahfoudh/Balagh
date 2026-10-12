@@ -1,0 +1,47 @@
+<div class="auth">
+  <div class="panel">
+    <div class="brand">
+      <span class="logo" lang="ar">بلاغ</span>
+      <div>
+        <div class="name">Balagh MR</div>
+        <div class="muted">{{ 'login.tagline' | t }}</div>
+      </div>
+    </div>
+
+    <h1>{{ 'login.title' | t }}</h1>
+    @if (error()) {
+      <div class="error-banner">{{ error() }}</div>
+    }
+    <form (ngSubmit)="submit()" class="form">
+      <mat-form-field>
+        <mat-label>{{ 'login.phone' | t }}</mat-label>
+        <input matInput name="phone" [(ngModel)]="phone" autocomplete="username" inputmode="tel" required
+               [placeholder]="'login.phonePlaceholder' | t" />
+        <mat-icon matPrefix>phone</mat-icon>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{ 'login.password' | t }}</mat-label>
+        <input matInput name="password" [(ngModel)]="password" [type]="hide() ? 'password' : 'text'"
+               autocomplete="current-password" required />
+        <mat-icon matPrefix>lock</mat-icon>
+        <button mat-icon-button matSuffix type="button" (click)="hide.set(!hide())"
+                [attr.aria-label]="'login.showPassword' | t">
+          <mat-icon>{{ hide() ? 'visibility' : 'visibility_off' }}</mat-icon>
+        </button>
+      </mat-form-field>
+      <button mat-flat-button type="submit" [disabled]="loading() || !phone || !password">
+        @if (loading()) {
+          <mat-spinner diameter="18" />
+        } @else {
+          {{ 'login.submit' | t }}
+        }
+      </button>
+    </form>
+    <p class="muted small">{{ 'login.help' | t }}</p>
+
+    <div class="lang">
+      <button type="button" [class.active]="i18n.lang === 'fr'" (click)="i18n.setLang('fr')">Français</button>
+      <button type="button" [class.active]="i18n.lang === 'ar'" (click)="i18n.setLang('ar')" lang="ar">العربية</button>
+    </div>
+  </div>
+</div>

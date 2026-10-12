@@ -1,0 +1,97 @@
+<mat-sidenav-container class="shell">
+  <mat-sidenav class="sidebar" [mode]="mobile() ? 'over' : 'side'" [opened]="!mobile() || menuOpen()"
+               (closedStart)="menuOpen.set(false)">
+    <a class="brand" routerLink="/tableau-de-bord">
+      <span class="logo" lang="ar">بلاغ</span>
+      <span class="name">Balagh MR</span>
+    </a>
+    <nav>
+      @for (item of nav(); track item.label) {
+        <a class="nav-item" [routerLink]="item.path" [queryParams]="item.query ?? {}" routerLinkActive="active"
+           [routerLinkActiveOptions]="{ paths: 'exact', queryParams: item.query ? 'subset' : 'ignored', matrixParams: 'ignored', fragment: 'ignored' }">
+          <mat-icon>{{ item.icon }}</mat-icon>
+          <span>{{ item.label | t }}</span>
+        </a>
+      }
+    </nav>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content">
+    <header class="topbar">
+      @if (mobile()) {
+        <button mat-icon-button (click)="menuOpen.set(true)" [attr.aria-label]="'shell.menu' | t">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <div class="context grow">
+        <span class="context-label">{{ context() }}</span>
+      </div>
+
+      <span class="live" [class.on]="realtime.connected()"
+            [matTooltip]="(realtime.connected() ? 'shell.liveOn' : 'shell.liveOff') | t">
+        <span class="dot"></span>
+        <span class="live-text">{{ 'shell.live' | t }}</span>
+      </span>
+
+      @if (alerts.soundReady() && alerts.soundWanted()) {
+        <button mat-icon-button (click)="toggleSound()" [matTooltip]="'shell.soundOff' | t">
+          <mat-icon>volume_up</mat-icon>
+        </button>
+      } @else {
+        <button mat-stroked-button class="sound-btn" (click)="toggleSound()" [matTooltip]="'shell.soundHint' | t">
+          <mat-icon>volume_off</mat-icon>
+          <span class="hide-mobile">{{ 'shell.soundOn' | t }}</span>
+        </button>
+      }
+
+      <button mat-icon-button [matMenuTriggerFor]="notifMenu" (menuOpened)="loadNotifications()"
+              [attr.aria-label]="'shell.notifications' | t">
+        <mat-icon aria-hidden="false" [matBadge]="unread() || null" matBadgeColor="warn" matBadgeSize="small">notifications</mat-icon>
+      </button>
+      <mat-menu #notifMenu="matMenu" class="notif-menu" xPosition="before">
+        <div class="notif-header" (click)="$event.stopPropagation()">
+          <strong>{{ 'shell.notifications' | t }}</strong>
+          <button mat-button (click)="markAllRead()" [disabled]="unread() === 0">{{ 'shell.markAllRead' | t }}</button>
+        </div>
+        @for (n of notifications(); track n.id) {
+          <button mat-menu-item class="notif" [class.unread]="!n.readAt" (click)="openNotification(n)">
+            <span class="notif-title">{{ n.title }}</span>
+            @if (n.body) {
+              <span class="notif-body">{{ n.body }}</span>
+            }
+            <span class="notif-time">{{ n.createdAt | ago }}</span>
+          </button>
+        } @empty {
+          <div class="empty">{{ 'shell.noNotifications' | t }}</div>
+        }
+      </mat-menu>
+
+      <div class="lang" role="group" [attr.aria-label]="'shell.language' | t">
+        <button type="button" [class.active]="i18n.lang === 'fr'" (click)="i18n.setLang('fr')">FR</button>
+        <button type="button" [class.active]="i18n.lang === 'ar'" (click)="i18n.setLang('ar')" lang="ar">عربي</button>
+      </div>
+
+      @if (auth.user(); as user) {
+        <button mat-button [matMenuTriggerFor]="userMenu" class="user-btn">
+          <mat-icon>account_circle</mat-icon>
+          <span class="hide-mobile">{{ user.firstName }} {{ user.lastName }}</span>
+        </button>
+        <mat-menu #userMenu="matMenu" xPosition="before">
+          <div class="user-info" (click)="$event.stopPropagation()">
+            <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+            <span class="muted">{{ user.role | label: 'role' }} · {{ user.phone }}</span>
+          </div>
+          <mat-divider />
+          <button mat-menu-item (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            <span>{{ 'shell.logout' | t }}</span>
+          </button>
+        </mat-menu>
+      }
+    </header>
+
+    <main>
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

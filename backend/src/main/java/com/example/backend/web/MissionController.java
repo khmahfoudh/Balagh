@@ -1,5 +1,7 @@
 package com.example.backend.web;
 
+import com.example.backend.common.PageResponse;
+import com.example.backend.enums.MissionStatus;
 import com.example.backend.security.CurrentUser;
 import com.example.backend.service.MissionService;
 import com.example.backend.storage.UploadedFile;
@@ -19,13 +21,24 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** Application chauffeur : missions, avancement, photo « après ». Annulation : dashboard. */
-@Tag(name = "Missions (chauffeur)")
+/** Application chauffeur : missions, avancement, photo « après ». Dashboard : liste et annulation. */
+@Tag(name = "Missions")
 @RestController
 @RequestMapping("/api/v1/missions")
 @RequiredArgsConstructor
 public class MissionController {
     private final MissionService missions;
+
+    @Operation(summary = "Dashboard : missions de l'organisme (toutes pour l'admin et l'État), plus récentes d'abord")
+    @PreAuthorize("hasAnyRole('AGENT','MANAGER','ADMIN','AUTHORITY')")
+    @GetMapping
+    public PageResponse<MissionSummary> list(@AuthenticationPrincipal CurrentUser me,
+                                             @RequestParam(required = false) List<MissionStatus> status,
+                                             @RequestParam(required = false) UUID driverId,
+                                             @RequestParam(defaultValue = "0") int page,
+                                             @RequestParam(defaultValue = "20") int size) {
+        return missions.list(me, status, driverId, page, size);
+    }
 
     @Operation(summary = "Mes missions actives, triées par urgence puis distance (lat/lng = position du camion)")
     @PreAuthorize("hasRole('DRIVER')")

@@ -1,0 +1,112 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>{{ (auth.hasRole('ADMIN', 'AUTHORITY') ? 'dashboard.titleNational' : 'dashboard.title') | t }}</h1>
+      <p class="subtitle">{{ 'dashboard.subtitle' | t }}</p>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  @if (stats(); as s) {
+    <section class="kpis" [attr.aria-label]="'dashboard.counters' | t">
+      <app-kpi [label]="'dashboard.urgent' | t" [value]="s.urgentOpen" [accent]="COLORS.urgent" />
+      <app-kpi [label]="'dashboard.toVerify' | t" [value]="s.newToVerify" [accent]="COLORS.new" />
+      <app-kpi [label]="'dashboard.inProgress' | t" [value]="s.inProgress" [accent]="COLORS.progress" />
+      <app-kpi [label]="'dashboard.resolvedToday' | t" [value]="s.resolvedToday" [accent]="COLORS.resolved" />
+      <app-kpi [label]="'dashboard.avgTime' | t" [value]="s.avgResolutionHours | hours"
+               [hint]="('dashboard.avgUrgent' | t) + ' ' + (s.avgUrgentResolutionHours | hours)" />
+      @if (auth.hasRole('ADMIN', 'AUTHORITY')) {
+        <app-kpi [label]="'dashboard.unassigned' | t" [value]="s.unassigned" />
+      }
+    </section>
+  }
+
+  <!-- Filtres : une seule rangée, ils agissent sur la carte ET sur la liste -->
+  <div class="filters">
+    <mat-form-field>
+      <mat-label>{{ 'filters.category' | t }}</mat-label>
+      <mat-select [(ngModel)]="category" (selectionChange)="load()">
+        <mat-option [value]="null">{{ 'filters.all' | t }}</mat-option>
+        @for (c of categories(); track c) {
+          <mat-option [value]="c">{{ c | label: 'category' }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'filters.status' | t }}</mat-label>
+      <mat-select [(ngModel)]="group" (selectionChange)="load()">
+        @for (g of groups; track g) {
+          <mat-option [value]="g">{{ g | label: 'statusGroup' }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'filters.zone' | t }}</mat-label>
+      <mat-select [(ngModel)]="zone" (selectionChange)="load()">
+        <mat-option [value]="null">{{ 'filters.allZones' | t }}</mat-option>
+        @for (z of zones(); track z.id) {
+          <mat-option [value]="z.id">{{ i18n.lang === 'ar' ? z.nameAr : z.nameFr }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="workspace">
+    <section class="card map-card" [class.dim]="loading()">
+      <div class="card-head">
+        <h2>{{ 'dashboard.liveMap' | t }}</h2>
+        <span class="muted small">{{ 'dashboard.mapHint' | t: { n: incidents().length } }}</span>
+      </div>
+      <app-map class="map" [points]="points()" (pointClick)="open($event)" />
+      <div class="legend">
+        <span><i [style.background]="COLORS.urgent"></i>{{ 'URGENT' | label: 'priority' }}</span>
+        <span><i [style.background]="COLORS.new"></i>{{ 'NEW' | label: 'status' }}</span>
+        <span><i [style.background]="COLORS.progress"></i>{{ 'legend.inProgress' | t }}</span>
+        <span><i [style.background]="COLORS.resolved"></i>{{ 'RESOLVED' | label: 'status' }}</span>
+        <span class="muted">{{ 'legend.count' | t }}</span>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="card">
+        <div class="card-head">
+          <h2>{{ 'dashboard.urgentList' | t }}</h2>
+          <span class="badge urgent">{{ urgent().length }}</span>
+        </div>
+        @for (i of urgent().slice(0, 6); track i.id) {
+          <a class="incident" [routerLink]="['/incidents', i.id]">
+            <span class="icon material-symbols-outlined" aria-hidden="true">{{ ICONS[i.category] }}</span>
+            <span class="grow">
+              <span class="line1">{{ i.category | label: 'category' }}</span>
+              <span class="line2">{{ i.place ?? '—' }}</span>
+              <span class="line3">{{ 'incident.reportsAgo' | t: { n: i.reportersCount, ago: (i.firstReportedAt | ago) } }}</span>
+            </span>
+            <app-incident-status [status]="i.status" priority="NORMAL" />
+          </a>
+        } @empty {
+          <p class="empty">{{ 'dashboard.noUrgent' | t }}</p>
+        }
+        @if (urgent().length > 0) {
+          <a mat-button routerLink="/incidents" [queryParams]="{ priority: 'URGENT' }">
+            {{ 'dashboard.seeAll' | t: { n: urgent().length } }}
+          </a>
+        }
+      </section>
+
+      <section class="card alerts">
+        <h2>{{ 'dashboard.alerts' | t }}</h2>
+        @for (a of alerts.alerts(); track a.at + a.incidentId) {
+          <a class="alert" [routerLink]="['/incidents', a.incidentId]">
+            <span class="material-symbols-outlined" aria-hidden="true">campaign</span>
+            <span class="grow">{{ a.message }}<span class="line3">{{ a.at | ago }}</span></span>
+          </a>
+        } @empty {
+          <p class="muted small">{{ 'dashboard.noAlerts' | t }}</p>
+        }
+      </section>
+    </aside>
+  </div>
+</div>

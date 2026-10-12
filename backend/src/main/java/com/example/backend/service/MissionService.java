@@ -2,6 +2,7 @@ package com.example.backend.service;
 
 import com.example.backend.common.ApiException;
 import com.example.backend.common.ErrorCode;
+import com.example.backend.common.PageResponse;
 import com.example.backend.common.GeoUtils;
 import com.example.backend.entity.*;
 import com.example.backend.enums.*;
@@ -18,10 +19,12 @@ import com.example.backend.web.dto.MissionDtos.MissionDetail;
 import com.example.backend.web.dto.MissionDtos.MissionSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
@@ -127,6 +130,21 @@ public class MissionService {
         notifications.notify(List.of(mission.getDriver()), NotificationService.MISSION_CANCELLED,
                 "Mission annulée", reason, incident.getId(), missionId);
         return mapper.mission(mission, null);
+    }
+
+    /**
+     * Écran « Missions » du dashboard, plus récentes d'abord. Isolation : un agent ou un responsable ne voit que les
+     * missions de son organisme ; l'admin et l'État voient toutes les missions.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<MissionSummary> list(CurrentUser me, Collection<MissionStatus> statuses, UUID driverId,
+                                             int page, int size) {
+        UUID organizationId = me.isOrgStaff() ? me.organizationId() : null;
+        Collection<MissionStatus> effective = statuses == null || statuses.isEmpty()
+                ? EnumSet.allOf(MissionStatus.class) : statuses;
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, 100),
+                Sort.by(Sort.Direction.DESC, "assignedAt"));
+        return PageResponse.of(missions.search(organizationId, effective, driverId, pageable), m -> mapper.mission(m, null));
     }
 
     // ---------- Côté chauffeur ----------

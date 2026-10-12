@@ -27,4 +27,10 @@ public class CurrentUserAuthentication extends AbstractAuthenticationToken {
     public CurrentUser getPrincipal() {
         return principal;
     }
+
+    /** Identifiant de l'utilisateur : sert d'adresse aux messages WebSocket personnels (/user/queue/...). */
+    @Override
+    public String getName() {
+        return principal.id().toString();
+    }
 }

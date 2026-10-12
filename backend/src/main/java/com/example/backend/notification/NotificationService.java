@@ -5,11 +5,14 @@ import com.example.backend.entity.Notification;
 import com.example.backend.entity.User;
 import com.example.backend.enums.Role;
 import com.example.backend.enums.UserStatus;
+import com.example.backend.realtime.RealtimeEvents.UserNotified;
 import com.example.backend.repository.NotificationRepository;
 import com.example.backend.repository.ReportRepository;
 import com.example.backend.repository.UserRepository;
+import com.example.backend.web.dto.MiscDtos.NotificationItem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -20,8 +23,8 @@ import java.util.UUID;
 
 /**
  * Notifications (matrice du cahier des charges §11).
- * Étape actuelle : notification enregistrée en base (consultable dans les apps) + log.
- * Le push (Expo/FCM) et le WebSocket viendront se brancher ici, sans changer les services métier.
+ * Chaque notification est enregistrée en base (consultable dans les apps) et poussée sur le WebSocket
+ * de son destinataire (dashboard). Le push (Expo/FCM) viendra se brancher ici, sans changer les services métier.
  */
 @Slf4j
 @Service
@@ -41,6 +44,7 @@ public class NotificationService {
     private final NotificationRepository notifications;
     private final UserRepository users;
     private final ReportRepository reports;
+    private final ApplicationEventPublisher eventPublisher;
 
     public void notify(Collection<User> recipients, String type, String title, String body,
                        UUID incidentId, UUID missionId) {
@@ -57,6 +61,8 @@ public class NotificationService {
             n.setIncidentId(incidentId);
             n.setMissionId(missionId);
             notifications.save(n);
+            eventPublisher.publishEvent(new UserNotified(user.getId(), new NotificationItem(n.getId(), type, title,
+                    body, incidentId, missionId, null, n.getCreatedAt())));
         }
         log.info("[NOTIF] {} « {} » → {} destinataire(s)", type, title, seen.size());
     }
