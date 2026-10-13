@@ -5,7 +5,8 @@ import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import { getApiConfig } from '../api/client';
 import { useI18n } from '../i18n/I18nProvider';
-import { leafletPage, MAP_BACKGROUND } from './leafletPage';
+import { leafletPage, type LeafletPageConfig, MAP_BACKGROUND } from './leafletPage';
+import type { LatLng } from './routing';
 
 /**
  * Couche d'abstraction carte (« MapProvider ») : les écrans n'utilisent que BalaghMap.
@@ -50,14 +51,29 @@ export interface MapPoint {
   urgentRadius?: number;
 }
 
+export interface EdgePadding {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 interface Props {
   points: MapPoint[];
   initialRegion?: Region;
   showsUserLocation?: boolean;
+  /** Avec showsUserLocation : « ma position » fait ensuite suivre le camion par la carte. */
+  followUser?: boolean;
+  /** Trajet à tracer (itinéraire) ; la carte le cadre en entier à la première réception. */
+  route?: LatLng[];
+  /** Bords couverts par des cartes ou boutons posés sur la carte (points) : le trajet est cadré à l'intérieur. */
+  edgePadding?: EdgePadding;
   onRegionChangeComplete?: (region: Region) => void;
   onPointPress?: (id: string) => void;
   style?: StyleProp<ViewStyle>;
 }
+
+const DEFAULT_PADDING: EdgePadding = { top: 0, right: 0, bottom: 0, left: 0 };
 
 type PageMessage =
   | { type: 'ready' }
@@ -65,24 +81,31 @@ type PageMessage =
   | { type: 'region'; region: Region }
   | { type: 'press'; id: string };
 
-export function BalaghMap({ points, initialRegion = NOUAKCHOTT, showsUserLocation, onRegionChangeComplete,
-                            onPointPress, style }: Props) {
+export function BalaghMap({ points, initialRegion = NOUAKCHOTT, showsUserLocation, followUser, route,
+                            edgePadding = DEFAULT_PADDING, onRegionChangeComplete, onPointPress, style }: Props) {
   const { t } = useI18n();
   const webView = useRef<WebView>(null);
   // La page n'est construite qu'une fois : initialRegion n'agit qu'à l'ouverture, comme avec react-native-maps
-  const [page] = useState(() => mapPage(initialRegion, Boolean(showsUserLocation)));
-  const [ready, setReady] = useState(false);
+  const [page] = useState(() => mapPage({
+    region: initialRegion, locateButton: Boolean(showsUserLocation), follow: Boolean(followUser), edgePadding,
+  }));
+  // Incrémenté à chaque « ready » : si la page se recharge, tout lui est renvoyé
+  const [session, setSession] = useState(0);
   const [failed, setFailed] = useState(false);
   const me = useUserLocation(Boolean(showsUserLocation));
 
-  // Les écrans recréent le tableau à chaque rendu : on ne redessine que si son contenu change
+  // Les écrans recréent les tableaux à chaque rendu : on ne redessine que si leur contenu change
   const pointsJson = JSON.stringify(points);
+  const routeJson = JSON.stringify(route ?? []);
   useEffect(() => {
-    if (ready) webView.current?.injectJavaScript(`window.balagh.points(${pointsJson});true;`);
-  }, [ready, pointsJson]);
+    if (session) webView.current?.injectJavaScript(`window.balagh.points(${pointsJson});true;`);
+  }, [session, pointsJson]);
   useEffect(() => {
-    if (ready && me) webView.current?.injectJavaScript(`window.balagh.me(${JSON.stringify(me)});true;`);
-  }, [ready, me]);
+    if (session) webView.current?.injectJavaScript(`window.balagh.route(${routeJson});true;`);
+  }, [session, routeJson]);
+  useEffect(() => {
+    if (session && me) webView.current?.injectJavaScript(`window.balagh.me(${JSON.stringify(me)});true;`);
+  }, [session, me]);
 
   function onMessage(event: WebViewMessageEvent) {
     let message: PageMessage;
@@ -91,7 +114,7 @@ export function BalaghMap({ points, initialRegion = NOUAKCHOTT, showsUserLocatio
     } catch {
       return;
     }
-    if (message.type === 'ready') setReady(true);
+    if (message.type === 'ready') setSession((n) => n + 1);
     else if (message.type === 'error') setFailed(true);
     else if (message.type === 'region') onRegionChangeComplete?.(message.region);
     else if (message.type === 'press') onPointPress?.(message.id);
@@ -160,9 +183,9 @@ function useUserLocation(enabled: boolean) {
 }
 
 /** Page Leaflet + adresse de base : celle du backend, qui sert de Referer aux tuiles (exigé par OpenStreetMap). */
-function mapPage(region: Region, locateButton: boolean): { html: string; baseUrl: string } {
+function mapPage(view: Omit<LeafletPageConfig, 'tileUrl' | 'attribution'>): { html: string; baseUrl: string } {
   return {
-    html: leafletPage({ region, tileUrl: options.tileUrl, attribution: options.attribution, locateButton }),
+    html: leafletPage({ ...view, tileUrl: options.tileUrl, attribution: options.attribution }),
     baseUrl: originOf(getApiConfig().baseUrl),
   };
 }

@@ -1,17 +1,19 @@
 import {
   api, ApiError, AppButton, BalaghMap, Banner, capture, categoryIcon, colors, enqueue, Field, formatDistance,
   getGpsFix, type LocalFile, Loader, type MissionDetail, type MissionStatus, radius, Screen, spacing, styles,
-  timeAgo, useI18n,
+  timeAgo, useI18n, useRoute,
 } from '@balagh/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Image, Linking, ScrollView, Text, View } from 'react-native';
 
+import { RouteSummary } from '../../components/RouteSummary';
+
 const STEPS = ['ASSIGNED', 'EN_ROUTE', 'ON_SITE', 'DONE'] as const;
 
 /**
- * Détail d'une mission (maquettes 15-D2 et D3) :
- * photos des citoyens, itinéraire dans Google Maps ou Waze, boutons En route → Arrivé → Terminé.
+ * Détail d'une mission (maquettes 15-D2 et D3) : photos des citoyens, trajet et durée jusqu'à l'incident,
+ * itinéraire plein écran dans l'app (guidage vocal dans Google Maps ou Waze), boutons En route → Arrivé → Terminé.
  * Terminer exige la photo « après » (avec position GPS et heure). Hors ligne, les actions sont mises en file.
  */
 export default function MissionScreen() {
@@ -38,6 +40,11 @@ export default function MissionScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Trajet en voiture jusqu'à l'incident tant que le chauffeur n'est pas sur place
+  const target = detail?.mission;
+  const driving = status === 'ASSIGNED' || status === 'EN_ROUTE';
+  const routing = useRoute(target && driving ? { latitude: target.latitude, longitude: target.longitude } : null, false);
 
   /** Envoie l'étape ; sans réseau, la met en file et avance l'écran quand même. */
   async function advance(target: MissionStatus, extraNote?: string) {
@@ -111,9 +118,10 @@ export default function MissionScreen() {
             right={<Text style={{ color: colors.gold, fontSize: 22, fontWeight: '700' }}>{urgent ? 'عاجل' : 'مهمة'}</Text>}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
         <BalaghMap
-          style={{ height: 190 }}
+          style={{ height: 220 }}
           initialRegion={{ latitude: m.latitude, longitude: m.longitude, latitudeDelta: 0.012, longitudeDelta: 0.012 }}
           showsUserLocation
+          route={routing.route?.path}
           points={[{ id: m.id, latitude: m.latitude, longitude: m.longitude, color: urgent ? colors.red : colors.orange,
             urgentRadius: urgent ? 60 : undefined }]}
         />
@@ -127,6 +135,7 @@ export default function MissionScreen() {
             {t('common.reports', { n: m.reportersCount })} · {t('mission.firstReport', { ago: timeAgo(m.firstReportedAt, t) })}
           </Text>
           {m.vehiclePlate ? <Text style={styles.muted}>🚛 {m.vehiclePlate} · {m.vehicleType}</Text> : null}
+          {driving ? <RouteSummary route={routing.route} state={routing.state} onRetry={routing.retry} /> : null}
 
           {/* Étapes : Assignée → En route → Sur place → Fin */}
           <View style={[styles.row, { gap: 6, marginVertical: spacing.md, flexWrap: 'wrap' }]}>
@@ -147,17 +156,22 @@ export default function MissionScreen() {
           ) : null}
           {detail.citizenDescriptions.map((d, i) => <Text key={i} style={[styles.muted, { fontStyle: 'italic' }]}>« {d} »</Text>)}
 
+          {driving ? (
+            <AppButton label={t('route.show')} variant="outline" style={{ marginTop: spacing.md }}
+                       onPress={() => router.push(`/itinerary/${id}`)} />
+          ) : null}
           {status !== 'DONE' && status !== 'CANCELLED' ? (
-            <View style={[styles.row, { gap: spacing.sm, marginTop: spacing.md }]}>
-              <AppButton label={t('mission.openRoute')} variant="outline" style={{ flex: 2 }}
+            <View style={[styles.row, { gap: spacing.sm, marginTop: driving ? 0 : spacing.md }]}>
+              <AppButton label={'🔊 ' + t('mission.openRoute')} variant="outline" style={{ flex: 1 }}
                          onPress={() => Linking.openURL(detail.googleMapsUrl)} />
-              <AppButton label={t('mission.openWaze')} variant="outline" style={{ flex: 1 }}
+              <AppButton label={'🔊 ' + t('mission.openWaze')} variant="outline" style={{ flex: 1 }}
                          onPress={() => Linking.openURL(detail.wazeUrl)} />
             </View>
           ) : null}
 
           {status === 'ASSIGNED' ? (
-            <AppButton label={t('mission.start')} loading={busy} onPress={() => advance('EN_ROUTE').catch(() => undefined)} />
+            <AppButton label={t('mission.start')} loading={busy}
+                       onPress={() => advance('EN_ROUTE').then(() => router.push(`/itinerary/${id}`)).catch(() => undefined)} />
           ) : null}
           {status === 'EN_ROUTE' ? (
             <AppButton label={t('mission.arrived')} loading={busy} onPress={() => advance('ON_SITE').catch(() => undefined)} />

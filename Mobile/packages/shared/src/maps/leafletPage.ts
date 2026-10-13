@@ -1,4 +1,4 @@
-import type { Region } from './BalaghMap';
+import type { EdgePadding, Region } from './BalaghMap';
 
 /** Fond affiché tant que les tuiles ne sont pas chargées (et derrière le message d'erreur). */
 export const MAP_BACKGROUND = '#e8eeeb';
@@ -10,11 +10,16 @@ export interface LeafletPageConfig {
   attribution: string;
   /** Bouton « ma position » (recentre sur le point bleu). */
   locateButton: boolean;
+  /** Après « ma position », la carte suit le point bleu jusqu'à ce qu'on la fasse glisser (conduite). */
+  follow: boolean;
+  /** Bords couverts par les cartes et boutons de l'écran : trajet cadré et contrôles Leaflet hors de ces bords. */
+  edgePadding: EdgePadding;
 }
 
 /**
- * Page Leaflet affichée par BalaghMap dans une WebView. Elle reçoit les points par injectJavaScript
- * (window.balagh.points / .me) et renvoie les événements par postMessage (ready, region, press, error).
+ * Page Leaflet affichée par BalaghMap dans une WebView. Elle reçoit les points, la position et le trajet par
+ * injectJavaScript (window.balagh.points / .me / .route) et renvoie les événements par postMessage
+ * (ready, region, press, error).
  * Fichier sans dépendance React Native : la page se teste dans un navigateur.
  */
 export function leafletPage(pageConfig: LeafletPageConfig): string {
@@ -29,6 +34,8 @@ export function leafletPage(pageConfig: LeafletPageConfig): string {
 <style>
   html, body, #map { margin: 0; height: 100%; background: ${MAP_BACKGROUND}; }
   .pin { background: none; border: 0; }
+  .leaflet-top { top: ${pageConfig.edgePadding.top}px; }
+  .leaflet-bottom { bottom: ${pageConfig.edgePadding.bottom}px; }
   .locate { width: 40px; height: 40px; border-radius: 20px; border: 0; background: #fff; color: #1a73e8;
             font-size: 22px; line-height: 40px; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
 </style>
@@ -46,7 +53,17 @@ export function leafletPage(pageConfig: LeafletPageConfig): string {
   var map = L.map('map', { zoomControl: false });
   L.tileLayer(config.tileUrl, { maxZoom: 19, attribution: config.attribution }).addTo(map);
   var layer = L.layerGroup().addTo(map);
-  var me = null, meDot = null, meHalo = null;
+  var me = null, meDot = null, meHalo = null, following = false;
+
+  // Trajet (bleu bordé de blanc) sous les cercles, les épingles et le point bleu
+  map.createPane('route').style.zIndex = 350;
+  var routeCasing = L.polyline([], { pane: 'route', color: '#fff', weight: 9, opacity: 0.9, interactive: false }).addTo(map);
+  var routeLine = L.polyline([], { pane: 'route', color: '#1a73e8', weight: 5, interactive: false }).addTo(map);
+  var routeFramed = false;
+  var pad = config.edgePadding;
+
+  // Faire glisser la carte arrête le suivi du camion
+  map.on('dragstart', function () { following = false; });
 
   // Fin de déplacement ou de zoom (et ouverture) : zone affichée, pour recharger les incidents
   map.on('moveend', function () {
@@ -83,6 +100,7 @@ export function leafletPage(pageConfig: LeafletPageConfig): string {
       button.innerHTML = '&#9678;';
       L.DomEvent.disableClickPropagation(button);
       L.DomEvent.on(button, 'click', function () {
+        following = config.follow;
         if (me) map.setView([me.latitude, me.longitude], Math.max(map.getZoom(), 16));
       });
       return button;
@@ -114,6 +132,18 @@ export function leafletPage(pageConfig: LeafletPageConfig): string {
       } else {
         meHalo.setLatLng(at).setRadius(position.accuracy);
         meDot.setLatLng(at);
+      }
+      if (following) map.panTo(at);
+    },
+    route: function (path) {
+      var latlngs = path.map(function (p) { return [p.latitude, p.longitude]; });
+      routeCasing.setLatLngs(latlngs);
+      routeLine.setLatLngs(latlngs);
+      // Premier trajet reçu : vue d'ensemble départ → destination (les recalculs ne bougent plus la carte)
+      if (latlngs.length > 1 && !routeFramed && !following) {
+        map.fitBounds(routeLine.getBounds(), { maxZoom: 17,
+          paddingTopLeft: [pad.left + 32, pad.top + 32], paddingBottomRight: [pad.right + 32, pad.bottom + 32] });
+        routeFramed = true;
       }
     },
   };

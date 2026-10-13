@@ -73,8 +73,21 @@ en production, prendre un fournisseur de tuiles OSM et le déclarer (variables d
 Build EAS (sons de notification) : `npx eas-cli@latest build --profile development --platform android`
 (dans `apps/citizen` ou `apps/driver`).
 
-Toute la carte passe par `packages/shared/src/maps/BalaghMap.tsx` : changer de fournisseur ne touche que ce fichier.
-Le bouton « Itinéraire » de l'app chauffeur ouvre toujours Google Maps ou Waze pour le guidage.
+Toute la carte passe par `packages/shared/src/maps/` (`BalaghMap.tsx` et sa page `leafletPage.ts`) : changer de
+fournisseur ne touche que ce dossier.
+
+### Itinéraire du chauffeur
+
+- Détail d'une mission : trajet en voiture tracé sur la carte, distance et durée (« 🧭 4,3 km · 12 min en voiture »).
+- « 🧭 Voir l'itinéraire » (ouvert aussi par « Je démarre la route ») : carte plein écran, trajet recalculé en roulant
+  (tous les 150 m, au plus toutes les 20 s), « Vous êtes arrivé » à moins de 60 m. « ◎ » centre la carte sur le
+  camion puis le suit ; faire glisser la carte arrête le suivi.
+- Guidage vocal tour par tour : boutons « 🔊 Google Maps » et « 🔊 Waze » (applications externes).
+
+Le trajet est calculé par [OSRM](https://project-osrm.org) sur les données OpenStreetMap (`maps/routing.ts`,
+`maps/useRoute.ts`). Par défaut : le serveur de démonstration `router.project-osrm.org`, sans clé, réservé au
+développement (1 requête/s au plus). En production : un serveur OSRM à soi, construit avec l'extrait Mauritanie de
+[Geofabrik](https://download.geofabrik.de/africa/mauritania.html), déclaré par `EXPO_PUBLIC_ROUTING_URL`.
 
 ## Ce qui reste à faire
 
