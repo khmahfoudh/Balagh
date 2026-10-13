@@ -7,5 +7,6 @@
     // de l'extension quand Lombok publie le correctif.
     "java.configuration.updateBuildConfiguration": "disabled",
     // Seul Maven compile le backend (start-backend.ps1) : l'extension ne doit jamais écrire dans target/.
-    "java.autobuild.enabled": false
+    "java.autobuild.enabled": false,
+    "java.compile.nullAnalysis.mode": "automatic"
 }
