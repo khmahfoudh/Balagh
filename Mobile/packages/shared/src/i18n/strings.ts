@@ -67,6 +67,7 @@ export const fr = {
   'map.meTooDone': 'Merci ! Votre confirmation compte comme un signalement.',
   'map.distance': 'à {d}',
   'map.noLocation': 'Activez la localisation pour voir les problèmes autour de vous.',
+  'map.unavailable': 'Carte indisponible : vérifiez la connexion internet.',
 
   'report.title': 'Nouveau signalement',
   'report.step1': '1. Que voyez-vous ?',
@@ -226,6 +227,7 @@ export const ar: Record<StringKey, string> = {
   'map.meTooDone': 'شكراً! تأكيدك يُحتسب بلاغاً.',
   'map.distance': 'على بعد {d}',
   'map.noLocation': 'فعّل تحديد الموقع لرؤية المشاكل من حولك.',
+  'map.unavailable': 'الخريطة غير متاحة: تحقّق من الاتصال بالإنترنت.',
 
   'report.title': 'بلاغ جديد',
   'report.step1': '1. ماذا ترى؟',

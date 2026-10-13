@@ -10,7 +10,8 @@ configureApi({
   baseUrl: process.env.EXPO_PUBLIC_API_URL || devServerApiUrl(Constants.expoConfig?.hostUri) || 'http://10.0.2.2:8080',
   app: 'CITIZEN',
 });
-setMapOptions({ googleOnIOS: process.env.EXPO_PUBLIC_IOS_GOOGLE_MAPS === 'true' });
+// Fond de carte : tuiles OpenStreetMap par défaut ; en production, l'adresse d'un fournisseur de tuiles OSM
+setMapOptions({ tileUrl: process.env.EXPO_PUBLIC_MAP_TILE_URL, attribution: process.env.EXPO_PUBLIC_MAP_ATTRIBUTION });
 
 export default function RootLayout() {
   return (

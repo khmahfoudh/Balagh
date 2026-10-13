@@ -19,12 +19,13 @@ npm start                         # http://localhost:4200
 | Clé | Rôle |
 |---|---|
 | `apiUrl` | Adresse du backend, `http://localhost:8080` en local |
-| `googleMapsApiKey` | Clé **Maps JavaScript API**. Vide : la carte s'affiche grisée « For development purposes only » avec un message de Google |
-| `googleMapsMapId` | Map ID Google (marqueurs avancés). `DEMO_MAP_ID` convient au développement |
+| `mapTileUrl` | Fond de carte Leaflet (`{z}/{x}/{y}`). Par défaut les tuiles OpenStreetMap, sans clé |
+| `mapAttribution` | Mention des sources en bas de la carte (HTML). Vide avec les tuiles OSM : mention OpenStreetMap |
 
-Clé Google Maps : Google Cloud Console → activer **Maps JavaScript API** → créer une clé, la **restreindre** au domaine
-du dashboard (référents HTTP `http://localhost:4200/*`, puis le domaine de production) → la coller dans `config.json`.
-En production, créer aussi un Map ID (Google Maps Platform → Map management) et le mettre dans `googleMapsMapId`.
+Carte : [Leaflet](https://leafletjs.com) + tuiles [OpenStreetMap](https://www.openstreetmap.org), aucune clé ni compte.
+Les serveurs `tile.openstreetmap.org` suffisent pour le développement et un usage modéré
+([règles d'usage](https://operations.osmfoundation.org/policies/tiles/)) ; en production à fort trafic, prendre un
+fournisseur de tuiles OSM (ou un serveur de tuiles à soi) et mettre son adresse dans `mapTileUrl` et sa mention dans `mapAttribution`.
 
 ## Comptes de démonstration
 
@@ -62,7 +63,7 @@ Les chauffeurs et les citoyens n'ont pas accès au dashboard (applications mobil
 src/app/
 ├── core/       services : API, connexion (JWT), temps réel (STOMP), alertes sonores, traductions FR/AR
 ├── layout/     menu latéral et barre du haut
-├── shared/     carte (seul fichier lié à Google Maps), badges de statut, graphiques
+├── shared/     carte (seul fichier lié à Leaflet), badges de statut, graphiques
 └── features/   un dossier par écran
 ```
 

@@ -94,6 +94,10 @@ tr.clickable:hover td { background: #f8faf9; }
 }
 // Groupe de points (zoom arrière) : gris foncé, plus grand, jamais une couleur de statut
 .map-pin.map-cluster { min-width: 34px; height: 34px; line-height: 30px; background: #1f2933; color: #fff; outline: 4px solid rgb(31 41 51 / 25%); }
+// Icône Leaflet de taille nulle posée sur le point : la pastille s'y centre quelle que soit sa largeur
+.leaflet-marker-icon.map-pin-anchor { background: none; border: 0; }
+.map-pin-anchor .map-pin { width: max-content; transform: translate(-50%, -50%); }
+.leaflet-container { font-family: Inter, system-ui, sans-serif; }
 
 // ---------- Alerte URGENT (snackbar) ----------
 .urgent-snack {

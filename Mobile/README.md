@@ -45,8 +45,8 @@ npm run citizen    # app citoyen (port 8081)
 npm run driver     # app chauffeur (port 8082), dans un autre terminal
 ```
 
-Scanner le QR code avec **Expo Go** (Android) ou l'appareil photo (iOS). La carte Google fonctionne dans Expo Go
-sur Android sans clé. Émulateur Android : `EXPO_PUBLIC_API_URL=http://10.0.2.2:8080`.
+Scanner le QR code avec **Expo Go** (Android) ou l'appareil photo (iOS). La carte (Leaflet + OpenStreetMap)
+fonctionne sans clé, dans Expo Go comme dans un build. Émulateur Android : `EXPO_PUBLIC_API_URL=http://10.0.2.2:8080`.
 
 ## 4. Comptes de démonstration
 
@@ -59,19 +59,22 @@ Connexion par code SMS : le code s'affiche dans les logs du backend (`[SMS DEV]`
 | Chauffeur ONAS (2 missions) | +222 22 00 00 03 | Balagh Chauffeur |
 | Chauffeur déchets | +222 21 00 00 03 | Balagh Chauffeur |
 
-## 5. Clés Google Maps (builds de développement et stores)
+## 5. Carte (Leaflet + OpenStreetMap)
 
-Inutiles dans Expo Go. Pour un build EAS (sons de notification, Google Maps sur iOS) :
+La carte est une page [Leaflet](https://leafletjs.com) dans une WebView (`react-native-webview`, inclus dans Expo Go) :
+même rendu sur Android et iOS, aucune clé ni compte. Leaflet 1.9.4 se charge depuis unpkg (version figée, intégrité
+vérifiée) et les tuiles depuis `tile.openstreetmap.org` : il faut internet pour afficher la carte.
 
-1. Google Cloud Console → créer un projet → activer **Maps SDK for Android** et **Maps SDK for iOS**.
-2. Créer une clé par plateforme et la **restreindre** : Android = nom du package (`mr.balagh.citizen` /
-   `mr.balagh.driver`) + empreinte SHA-1 du certificat (`eas credentials`) ; iOS = bundle ID.
-3. Les mettre en variables d'environnement (jamais dans le code), par exemple dans `.env.local` ou les secrets EAS :
-   `GOOGLE_MAPS_ANDROID_API_KEY=…` et `GOOGLE_MAPS_IOS_API_KEY=…` (lues par `app.config.ts`),
-   et `EXPO_PUBLIC_IOS_GOOGLE_MAPS=true` pour utiliser Google Maps sur iOS.
-4. `npx eas-cli@latest build --profile development --platform android` (dans `apps/citizen` ou `apps/driver`).
+Les serveurs OpenStreetMap suffisent pour le développement mais leurs
+[règles d'usage](https://operations.osmfoundation.org/policies/tiles/) interdisent une app publiée à fort trafic :
+en production, prendre un fournisseur de tuiles OSM et le déclarer (variables d'environnement, voir `.env.example`) :
+`EXPO_PUBLIC_MAP_TILE_URL=https://…/{z}/{x}/{y}.png` et `EXPO_PUBLIC_MAP_ATTRIBUTION=…`.
+
+Build EAS (sons de notification) : `npx eas-cli@latest build --profile development --platform android`
+(dans `apps/citizen` ou `apps/driver`).
 
 Toute la carte passe par `packages/shared/src/maps/BalaghMap.tsx` : changer de fournisseur ne touche que ce fichier.
+Le bouton « Itinéraire » de l'app chauffeur ouvre toujours Google Maps ou Waze pour le guidage.
 
 ## Ce qui reste à faire
 

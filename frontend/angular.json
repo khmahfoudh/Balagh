@@ -30,12 +30,15 @@
               }
             ],
             "styles": [
+              "node_modules/leaflet/dist/leaflet.css",
+              "node_modules/leaflet.markercluster/dist/MarkerCluster.css",
               "src/styles.scss"
             ],
             "security": {
               "allowedHosts": []
             },
-            "inlineStyleLanguage": "scss"
+            "inlineStyleLanguage": "scss",
+            "allowedCommonJsDependencies": ["leaflet", "leaflet.markercluster"]
           },
           "configurations": {
             "production": {

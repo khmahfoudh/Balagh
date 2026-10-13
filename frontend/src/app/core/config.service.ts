@@ -3,16 +3,19 @@ import { Injectable } from '@angular/core';
 export interface AppConfig {
   /** Adresse du backend, ex. http://localhost:8080 */
   apiUrl: string;
-  /** Clé Google Maps JavaScript API (restreinte au domaine du dashboard). Vide = mode développement Google. */
-  googleMapsApiKey: string;
-  /** Map ID Google (marqueurs avancés). DEMO_MAP_ID convient au développement. */
-  googleMapsMapId: string;
+  /** Fond de carte Leaflet ({z}/{x}/{y}). Par défaut les tuiles OpenStreetMap, sans clé. */
+  mapTileUrl: string;
+  /** Mention des sources affichée en bas de la carte (obligatoire pour OpenStreetMap). */
+  mapAttribution: string;
 }
+
+const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 
 /** Configuration lue au démarrage depuis public/config.json (non versionné, voir config.example.json). */
 @Injectable({ providedIn: 'root' })
 export class ConfigService {
-  private config: AppConfig = { apiUrl: 'http://localhost:8080', googleMapsApiKey: '', googleMapsMapId: 'DEMO_MAP_ID' };
+  private config: AppConfig = { apiUrl: 'http://localhost:8080', mapTileUrl: OSM_TILES, mapAttribution: OSM_ATTRIBUTION };
 
   async load(): Promise<void> {
     try {
@@ -38,11 +41,12 @@ export class ConfigService {
     return this.baseUrl.replace(/^http/, 'ws') + '/ws';
   }
 
-  get googleMapsApiKey(): string {
-    return this.config.googleMapsApiKey;
+  get mapTileUrl(): string {
+    return this.config.mapTileUrl || OSM_TILES;
   }
 
-  get googleMapsMapId(): string {
-    return this.config.googleMapsMapId || 'DEMO_MAP_ID';
+  /** Les tuiles OSM par défaut gardent toujours leur mention OpenStreetMap. */
+  get mapAttribution(): string {
+    return this.config.mapAttribution || (this.mapTileUrl === OSM_TILES ? OSM_ATTRIBUTION : '');
   }
 }

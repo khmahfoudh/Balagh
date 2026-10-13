@@ -22,7 +22,7 @@ export const appConfig: ApplicationConfig = {
     { provide: MAT_DATE_LOCALE, useFactory: () => inject(I18nService).locale },
     { provide: MatPaginatorIntl, useClass: PaginatorIntl },
     { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: { appearance: 'outline', subscriptSizing: 'dynamic' } },
-    // Lit public/config.json (adresse du backend, clé Google Maps) puis restaure la session
+    // Lit public/config.json (adresse du backend, fond de carte) puis restaure la session
     provideAppInitializer(async () => {
       // inject() n'est permis qu'avant le premier await
       inject(I18nService);

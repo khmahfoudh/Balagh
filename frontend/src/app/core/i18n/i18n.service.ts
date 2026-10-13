@@ -22,7 +22,7 @@ function storedLang(): Lang {
 
 /**
  * Français / arabe (droite à gauche). La langue est fixée au chargement de la page : en changer recharge
- * le dashboard, pour que tout suive (composants Material, carte Google, dates).
+ * le dashboard, pour que tout suive (composants Material, carte, dates).
  */
 @Injectable({ providedIn: 'root' })
 export class I18nService {

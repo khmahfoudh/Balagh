@@ -16,8 +16,8 @@
     "expo-secure-store": "*",
     "react": "*",
     "react-native": "*",
-    "react-native-maps": "1.27.2",
-    "react-native-safe-area-context": "*"
+    "react-native-safe-area-context": "*",
+    "react-native-webview": "*"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

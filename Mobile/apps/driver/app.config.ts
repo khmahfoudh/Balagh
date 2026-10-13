@@ -1,10 +1,5 @@
 import type { ExpoConfig } from 'expo/config';
 
-// Clés Google Maps : variables d'environnement (jamais dans le code). Inutiles dans Expo Go.
-const mapsPlugin: [string, Record<string, string>] = ['react-native-maps', {}];
-if (process.env.GOOGLE_MAPS_ANDROID_API_KEY) mapsPlugin[1].androidGoogleMapsApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY;
-if (process.env.GOOGLE_MAPS_IOS_API_KEY) mapsPlugin[1].iosGoogleMapsApiKey = process.env.GOOGLE_MAPS_IOS_API_KEY;
-
 const config: ExpoConfig = {
   name: 'Balagh Chauffeur',
   slug: 'balagh-driver',
@@ -26,7 +21,6 @@ const config: ExpoConfig = {
       cameraPermission: 'Balagh Chauffeur utilise l’appareil photo pour la photo « après » de chaque mission.',
       microphonePermission: false,
     }],
-    mapsPlugin,
   ],
 };
 

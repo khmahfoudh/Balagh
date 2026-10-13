@@ -163,7 +163,7 @@
           <h2>{{ 'detail.location' | t }}</h2>
           <app-map class="mini-map" [points]="point()" />
           <a class="small" target="_blank" rel="noopener"
-             [href]="'https://www.google.com/maps/search/?api=1&query=' + i.latitude + ',' + i.longitude">
+             [href]="'https://www.openstreetmap.org/?mlat=' + i.latitude + '&mlon=' + i.longitude + '#map=17/' + i.latitude + '/' + i.longitude">
             {{ 'detail.openInMaps' | t }}
           </a>
         </section>

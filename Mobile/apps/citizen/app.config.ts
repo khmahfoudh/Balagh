@@ -1,11 +1,5 @@
 import type { ExpoConfig } from 'expo/config';
 
-// Clés Google Maps : variables d'environnement (jamais dans le code). Inutiles dans Expo Go,
-// obligatoires pour un build de développement EAS ou une publication sur les stores.
-const mapsPlugin: [string, Record<string, string>] = ['react-native-maps', {}];
-if (process.env.GOOGLE_MAPS_ANDROID_API_KEY) mapsPlugin[1].androidGoogleMapsApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY;
-if (process.env.GOOGLE_MAPS_IOS_API_KEY) mapsPlugin[1].iosGoogleMapsApiKey = process.env.GOOGLE_MAPS_IOS_API_KEY;
-
 const config: ExpoConfig = {
   name: 'Balagh',
   slug: 'balagh-citizen',
@@ -27,7 +21,6 @@ const config: ExpoConfig = {
       cameraPermission: 'Balagh utilise l’appareil photo pour photographier le problème signalé.',
       microphonePermission: 'Balagh utilise le micro pour les vidéos de signalement.',
     }],
-    mapsPlugin,
   ],
 };
 
